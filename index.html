@@ -82,7 +82,6 @@ nav.tabs button.active{background:var(--primary);color:#fff;border:none}
 .report-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:.85rem;margin:12px 0;color:var(--dark-text)}
 .report-meta-item{background:rgba(255,255,255,.85);padding:9px;border-radius:10px;font-weight:700;border-right:4px solid var(--primary)}
 .report-meta-item b{color:var(--primary);display:block;font-size:.8rem}
-.report-meta-item .meta-val{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:12px;background:#fff;border-radius:8px;overflow:hidden}
 th,td{padding:10px 8px;text-align:right;border-bottom:1px solid #ddd;font-weight:700}
 th{background:var(--primary);color:#fff}
@@ -102,7 +101,12 @@ th{background:var(--primary);color:#fff}
 .report-title-wrap{flex:1;text-align:center}
 .report-title{color:#12233a;font-size:1.35rem;font-weight:900;margin:0 0 4px}
 .report-school{color:#243b2a;font-size:.85rem;font-weight:700}
-.report-table{width:100%;border-collapse:separate;border-spacing:7px 7px;margin-top:12px}
+.report-table{width:100%;border-collapse:separate;border-spacing:7px 7px;margin-top:12px;table-layout:fixed}
+.report-table th:nth-child(1),.report-table td:nth-child(1){width:19%}
+.report-table th:nth-child(2),.report-table td:nth-child(2){width:29%}
+.report-table th:nth-child(3),.report-table td:nth-child(3),
+.report-table th:nth-child(4),.report-table td:nth-child(4),
+.report-table th:nth-child(5),.report-table td:nth-child(5){width:17.33%}
 .report-table th{background:#f0ebe0;color:var(--primary);font-size:.75rem;padding:10px 4px;text-align:center;font-weight:800;border-bottom:2px solid var(--primary);border-radius:8px}
 .report-table td{background:#fff;padding:9px 6px;text-align:center;font-size:.8rem;font-weight:700;vertical-align:middle;border-radius:10px}
 .report-table td:first-child{text-align:right;color:var(--primary);font-weight:900}
@@ -560,12 +564,12 @@ function renderReportView(){
   c.appendChild(header);
   
   const meta=el('div',{class:'report-meta'});
-  const item1=el('div',{class:'report-meta-item',html:`<b>العبقري/ة</b><span class="meta-val">${stu?stu.name:'-'}</span>`});
-  const item1b=el('div',{class:'report-meta-item',html:`<b>المعلم/ة</b><span class="meta-val">${s.teacher.name}</span>`});
-  const item2=el('div',{class:'report-meta-item',html:`<b>الحلقة</b><span class="meta-val">${s.teacher.halaqa}</span>`});
-  const item5=el('div',{class:'report-meta-item',html:`<b>الفترة</b><span class="meta-val">${r.period}</span>`});
-  const item3=el('div',{class:'report-meta-item',html:`<b>التاريخ</b><span class="meta-val">${new Date(r.date).toLocaleDateString('ar-SA')}</span>`});
-  const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b><span class="meta-val">${r.hijri}</span>`});
+  const item1=el('div',{class:'report-meta-item',html:`<b>العبقري/ة</b> ${stu?stu.name:'-'}`});
+  const item1b=el('div',{class:'report-meta-item',html:`<b>المعلم/ة</b> ${s.teacher.name}`});
+  const item2=el('div',{class:'report-meta-item',html:`<b>الحلقة</b> ${s.teacher.halaqa}`});
+  const item5=el('div',{class:'report-meta-item',html:`<b>الفترة</b> ${r.period}`});
+  const item3=el('div',{class:'report-meta-item',html:`<b>التاريخ</b> ${new Date(r.date).toLocaleDateString('ar-SA')}`});
+  const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b> ${r.hijri}`});
   meta.append(item1,item1b,item2,item5,item3,item4);
   c.appendChild(meta);
   
