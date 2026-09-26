@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>عباقرة القرآن</title>
 <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
   --primary:#1e5a8e;
@@ -73,7 +75,7 @@ nav.tabs button.active{background:var(--primary);color:#fff;border:none}
 .report-title{color:var(--primary);font-size:1.3rem;font-weight:900;margin:6px 0}
 .report-school{color:#333;font-size:.9rem;font-weight:700}
 .report-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:.85rem;margin:12px 0;color:var(--dark-text)}
-.report-meta-item{background:rgba(255,255,255,.8);padding:8px;border-radius:8px;font-weight:700;border-left:4px solid var(--primary)}
+.report-meta-item{background:rgba(255,255,255,.85);padding:9px;border-radius:10px;font-weight:700;border-right:4px solid var(--primary)}
 .report-meta-item b{color:var(--primary);display:block;font-size:.8rem}
 table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:12px;background:#fff;border-radius:8px;overflow:hidden}
 th,td{padding:10px 8px;text-align:right;border-bottom:1px solid #ddd;font-weight:700}
@@ -84,6 +86,28 @@ th{background:var(--primary);color:#fff}
 .pill-success{background:#c8e0d0;color:var(--green)}
 .pill-warning{background:#e8dcc8;color:var(--brown)}
 .pill-danger{background:#e8c4bc;color:#c17a5f}
+.rate-opts label.on[data-r="ممتاز"]{background:#2e7d4f;border-color:#2e7d4f;color:#fff}
+.rate-opts label.on[data-r="جيد"]{background:#1e5a8e;border-color:#1e5a8e;color:#fff}
+.rate-opts label.on[data-r="يحتاج عناية"]{background:#c0392b;border-color:#c0392b;color:#fff}
+.report-view{background:linear-gradient(135deg,#e3dcc0 0%,#a9b98a 45%,#5f7a5a 100%)}
+.report-header{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:3px solid var(--primary);padding-bottom:12px;margin-bottom:14px}
+.report-logo{width:60px;height:60px;margin:0;background:#fff;border-radius:10px;padding:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.report-title-wrap{flex:1;text-align:center}
+.report-title{color:#12233a;font-size:1.35rem;font-weight:900;margin:0 0 4px}
+.report-school{color:#243b2a;font-size:.85rem;font-weight:700}
+.report-table{width:100%;border-collapse:separate;border-spacing:0 6px;margin-top:12px}
+.report-table th{background:var(--primary);color:#fff;font-size:.72rem;padding:8px 4px;text-align:center;font-weight:800}
+.report-table th:first-child{border-radius:8px 0 0 8px}
+.report-table th:last-child{border-radius:0 8px 8px 0}
+.report-table td{background:#fff;padding:9px 6px;text-align:center;font-size:.8rem;font-weight:700;vertical-align:middle}
+.report-table td:first-child{text-align:right;border-radius:0 10px 10px 0;color:var(--primary);font-weight:900}
+.report-table td:last-child{border-radius:10px 0 0 10px}
+.pill-achieve{display:inline-block;background:#e8b923;color:#2a2205;padding:6px 10px;border-radius:14px;font-weight:800;font-size:.76rem;max-width:100%}
+.rate-chip{width:100%;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.05rem;color:transparent}
+.rate-chip.blue{background:#2f6fb0}
+.rate-chip.yellow{background:#e8b923}
+.rate-chip.pink{background:#e3a6da}
+.rate-chip.selected{color:#12233a;box-shadow:0 0 0 3px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.28);transform:scale(1.1)}
 @media print{#app>*:not(.report-view){display:none!important}body{background:#fff}@page{margin:0}}
 </style>
 </head>
@@ -273,7 +297,7 @@ function renderStudents(){
   const c=el('div',{class:'card'});
   c.innerHTML=`<h2>الطلاب</h2>`;
   const form=el('form',{class:'row'});
-  form.innerHTML=`<input name="name" placeholder="اسم الطالب" required style="flex:2"><button class="btn-primary" style="flex:1;margin-top:0;padding:11px 10px" type="submit">+</button>`;
+  form.innerHTML=`<input name="name" placeholder="اسم الطالب" required style="flex:2"><button class="btn-primary" style="flex:1;margin-top:0;padding:11px 10px" type="submit">➕ إضافة</button>`;
   form.addEventListener('submit',e=>{e.preventDefault();const n=new FormData(form).get('name').trim();if(!n)return;if(!s.students)s.students=[];s.students.push({id:uid(),name:n});form.reset();save();render();});
   c.appendChild(form);
   const list=el('div',{style:'margin-top:14px'});
@@ -282,13 +306,13 @@ function renderStudents(){
     const row=el('div',{class:'item-row'});
     const nameSpan=el('span',{},st.name);
     const actions=el('div',{class:'actions-inline'});
-    const editBtn=el('button',{class:'icon-btn edit',title:'تعديل'},'تعديل');
-    const delBtn=el('button',{class:'icon-btn del',title:'حذف'},'حذف');
+    const editBtn=el('button',{class:'icon-btn edit',title:'تعديل'},'✏️ تعديل');
+    const delBtn=el('button',{class:'icon-btn del',title:'حذف'},'🗑️ حذف');
     editBtn.addEventListener('click',()=>{
       const inp=el('input',{value:st.name});
       inp.style.flex='1';
       row.innerHTML='';row.appendChild(inp);
-      const ok=el('button',{class:'icon-btn ok',title:'حفظ'},'حفظ');
+      const ok=el('button',{class:'icon-btn ok',title:'حفظ'},'💾 حفظ');
       ok.addEventListener('click',()=>{const v=inp.value.trim();if(v){st.name=v;save();}render();});
       inp.addEventListener('keydown',e=>{if(e.key==='Enter')ok.click();});
       row.appendChild(ok);
@@ -307,7 +331,7 @@ function renderSubjects(){
   const c=el('div',{class:'card'});
   c.innerHTML=`<h2>المواد</h2>`;
   const form=el('form',{class:'row'});
-  form.innerHTML=`<input name="name" placeholder="اسم المادة" required style="flex:2"><button class="btn-primary" style="flex:1;margin-top:0;padding:11px 10px" type="submit">+</button>`;
+  form.innerHTML=`<input name="name" placeholder="اسم المادة" required style="flex:2"><button class="btn-primary" style="flex:1;margin-top:0;padding:11px 10px" type="submit">➕ إضافة</button>`;
   form.addEventListener('submit',e=>{e.preventDefault();const n=new FormData(form).get('name').trim();if(!n)return;s.subjects.push(n);form.reset();save();render();});
   c.appendChild(form);
   const list=el('div',{style:'margin-top:14px'});
@@ -315,13 +339,13 @@ function renderSubjects(){
     const row=el('div',{class:'item-row'});
     const nameSpan=el('span',{},sub);
     const actions=el('div',{class:'actions-inline'});
-    const editBtn=el('button',{class:'icon-btn edit',title:'تعديل'},'تعديل');
-    const delBtn=el('button',{class:'icon-btn del',title:'حذف'},'حذف');
+    const editBtn=el('button',{class:'icon-btn edit',title:'تعديل'},'✏️ تعديل');
+    const delBtn=el('button',{class:'icon-btn del',title:'حذف'},'🗑️ حذف');
     editBtn.addEventListener('click',()=>{
       const inp=el('input',{value:sub});
       inp.style.flex='1';
       row.innerHTML='';row.appendChild(inp);
-      const ok=el('button',{class:'icon-btn ok',title:'حفظ'},'حفظ');
+      const ok=el('button',{class:'icon-btn ok',title:'حفظ'},'💾 حفظ');
       ok.addEventListener('click',()=>{const v=inp.value.trim();if(v){s.subjects[i]=v;save();}render();});
       inp.addEventListener('keydown',e=>{if(e.key==='Enter')ok.click();});
       row.appendChild(ok);
@@ -349,7 +373,7 @@ function renderNewReport(){
     </div>
     <div class="row">
       <div class="row-item"><label>التاريخ</label><input id="rdate" type="date" required></div>
-      <div class="row-item"><label>الهجري</label><input id="rdate-hijri" type="text" readonly></div>
+      <div class="row-item"><label>الهجري</label><input id="rdate-hijri" type="text"></div>
     </div>
     <label>الفترة</label><input id="rperiod" placeholder="الأسبوع الأول">`;
   c.appendChild(top);
@@ -370,7 +394,7 @@ function renderNewReport(){
   s.subjects.forEach(sub=>{
     const safe=sub.replace(/\s+/g,'_');
     const b=el('div',{class:'subject-block'});
-    b.innerHTML=`<h3>${sub}</h3><label>الإنجاز</label><textarea data-subj="${sub}" placeholder="..."></textarea><label>التقييم</label><div class="rate-opts" data-subj="${sub}">${RATINGS.map(r=>`<label><input type="radio" name="rate_${safe}" value="${r}">${r}</label>`).join('')}</div>`;
+    b.innerHTML=`<h3>${sub}</h3><label>الإنجاز</label><textarea data-subj="${sub}" placeholder="..."></textarea><label>التقييم</label><div class="rate-opts" data-subj="${sub}">${RATINGS.map(r=>`<label data-r="${r}"><input type="radio" name="rate_${safe}" value="${r}">${r}</label>`).join('')}</div>`;
     subWrap.appendChild(b);
   });
   c.appendChild(subWrap);
@@ -459,23 +483,20 @@ function renderReportView(){
   const c=el('div',{class:'card report-view'});
   
   const header=el('div',{class:'report-header'});
+  const titleWrap=el('div',{class:'report-title-wrap'});
+  const title=el('div',{class:'report-title'});
+  title.textContent=`التقرير ${reportTypeLabel(r.type)} لأجيال القرآن`;
+  const school=el('div',{class:'report-school'});
+  school.textContent=s.teacher.school;
+  titleWrap.append(title,school);
   const logo=el('div',{class:'report-logo'});
   const logoImg=el('img',{src:getLogoBase64()});
   logo.appendChild(logoImg);
-  header.appendChild(logo);
-  
-  const title=el('div',{class:'report-title'});
-  title.textContent=`التقرير ${reportTypeLabel(r.type)}`;
-  header.appendChild(title);
-  
-  const school=el('div',{class:'report-school'});
-  school.textContent=s.teacher.school;
-  header.appendChild(school);
-  
+  header.append(logo,titleWrap);
   c.appendChild(header);
   
   const meta=el('div',{class:'report-meta'});
-  const item1=el('div',{class:'report-meta-item',html:`<b>الطالب</b> ${stu?stu.name:'-'}`});
+  const item1=el('div',{class:'report-meta-item',html:`<b>العبقري/ة</b> ${stu?stu.name:'-'}`});
   const item2=el('div',{class:'report-meta-item',html:`<b>الحلقة</b> ${s.teacher.halaqa}`});
   const item3=el('div',{class:'report-meta-item',html:`<b>التاريخ</b> ${new Date(r.date).toLocaleDateString('ar-SA')}`});
   const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b> ${r.hijri}`});
@@ -483,16 +504,18 @@ function renderReportView(){
   meta.append(item1,item2,item3,item4,item5);
   c.appendChild(meta);
   
-  const table=el('table',{});
-  const thead=el('tr',{html:'<th>المادة</th><th>الإنجاز</th><th>التقييم</th>'});
+  const table=el('table',{class:'report-table'});
+  const thead=el('tr',{html:'<th>المادة</th><th>ما أنجزه العبقري</th><th>ممتاز</th><th>جيد</th><th>يحتاج عناية</th>'});
   table.appendChild(thead);
   r.entries.forEach(e=>{
     const tr=el('tr',{});
     const td1=el('td',{html:`<b>${e.subject}</b>`});
-    const td2=el('td',{});
-    td2.textContent=e.text||'-';
-    const td3=el('td',{html:ratingPill(e.rating)});
-    tr.append(td1,td2,td3);
+    const td2=el('td',{html:`<span class="pill-achieve">${e.text||'-'}</span>`});
+    const chip=(name,cls)=>`<div class="rate-chip ${cls}${e.rating===name?' selected':''}">${e.rating===name?'✔':''}</div>`;
+    const td3=el('td',{html:chip('ممتاز','blue')});
+    const td4=el('td',{html:chip('جيد','yellow')});
+    const td5=el('td',{html:chip('يحتاج عناية','pink')});
+    tr.append(td1,td2,td3,td4,td5);
     table.appendChild(tr);
   });
   c.appendChild(table);
@@ -502,12 +525,40 @@ function renderReportView(){
   back.textContent='رجوع';
   back.addEventListener('click',()=>{route='archive';window._viewRep=null;render();});
   
-  const printBtn=el('button',{class:'btn-primary'});
-  printBtn.textContent='طباعة';
-  printBtn.addEventListener('click',()=>window.print());
+  const pdfBtn=el('button',{class:'btn-primary'});
+  pdfBtn.textContent='📄 تحويل PDF ومشاركة';
+  pdfBtn.addEventListener('click',async()=>{
+    pdfBtn.textContent='جارٍ التحويل...';
+    pdfBtn.disabled=true;
+    actions.style.display='none';
+    try{
+      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
+      const imgData=canvas.toDataURL('image/png');
+      const {jsPDF}=window.jspdf;
+      const pdf=new jsPDF('p','mm','a4');
+      const pageW=pdf.internal.pageSize.getWidth(),pageH=pdf.internal.pageSize.getHeight();
+      const imgW=pageW,imgH=canvas.height*imgW/canvas.width;
+      let heightLeft=imgH,position=0;
+      pdf.addImage(imgData,'PNG',0,position,imgW,imgH);
+      heightLeft-=pageH;
+      while(heightLeft>0){position=heightLeft-imgH;pdf.addPage();pdf.addImage(imgData,'PNG',0,position,imgW,imgH);heightLeft-=pageH;}
+      const fname=`تقرير_${stu?stu.name:'الطالب'}.pdf`;
+      const blob=pdf.output('blob');
+      const file=new File([blob],fname,{type:'application/pdf'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:fname,text:'تقرير عبقري القرآن'});
+      } else {
+        pdf.save(fname);
+        alert('تم تنزيل ملف PDF، افتح واتساب وأرفقه من الملفات لمشاركته');
+      }
+    }catch(err){alert('تعذر إنشاء PDF');}
+    actions.style.display='';
+    pdfBtn.textContent='📄 تحويل PDF ومشاركة';
+    pdfBtn.disabled=false;
+  });
   
   const waBtn=el('button',{class:'btn-wa'});
-  waBtn.textContent='واتساب';
+  waBtn.textContent='💬 واتساب';
   waBtn.addEventListener('click',()=>{
     let txt=`التقرير ${reportTypeLabel(r.type)}\n${s.teacher.school}\nالطالب: ${stu?stu.name:'-'}\nالحلقة: ${s.teacher.halaqa}\nالتاريخ: ${new Date(r.date).toLocaleDateString('ar-SA')}\nالهجري: ${r.hijri}\nالفترة: ${r.period}\n\n`;
     r.entries.forEach(e=>{txt+=`${e.subject}: ${e.text||'-'} | ${e.rating||'-'}\n`;});
@@ -515,10 +566,10 @@ function renderReportView(){
   });
   
   const del=el('button',{class:'btn-danger'});
-  del.textContent='حذف';
+  del.textContent='🗑️ حذف';
   del.addEventListener('click',()=>{if(confirm('حذف؟')){s.reports=s.reports.filter(x=>x.id!==r.id);save();route='archive';window._viewRep=null;render();}});
   
-  actions.append(back,printBtn,waBtn,del);
+  actions.append(back,pdfBtn,waBtn,del);
   c.appendChild(actions);
   return c;
 }
