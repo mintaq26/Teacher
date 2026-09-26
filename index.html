@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2e59">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="عباقرة القرآن">
+<meta name="mobile-web-app-capable" content="yes">
 <title>عباقرة القرآن</title>
 <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -80,15 +85,15 @@ nav.tabs button.active{background:var(--primary);color:#fff;border:none}
 table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:12px;background:#fff;border-radius:8px;overflow:hidden}
 th,td{padding:10px 8px;text-align:right;border-bottom:1px solid #ddd;font-weight:700}
 th{background:var(--primary);color:#fff}
-.footer-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-.footer-actions button{flex:1;min-width:100px;font-size:.9rem}
+.footer-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:14px}
+.footer-actions button{width:100%;font-size:.85rem;padding:12px 8px;margin-top:0}
 .pill{display:inline-block;padding:6px 12px;border-radius:16px;font-size:.8rem;font-weight:800;white-space:nowrap;text-align:center}
 .pill-success{background:#c8e0d0;color:var(--green)}
 .pill-warning{background:#e8dcc8;color:var(--brown)}
 .pill-danger{background:#e8c4bc;color:#c17a5f}
-.rate-opts label.on[data-r="ممتاز"]{background:#2e7d4f;border-color:#2e7d4f;color:#fff}
-.rate-opts label.on[data-r="جيد"]{background:#1e5a8e;border-color:#1e5a8e;color:#fff}
-.rate-opts label.on[data-r="يحتاج عناية"]{background:#c0392b;border-color:#c0392b;color:#fff}
+.rate-opts label.on[data-r="ممتاز"]{background:#7ea788;border-color:#7ea788;color:#fff}
+.rate-opts label.on[data-r="جيد"]{background:#6f8fad;border-color:#6f8fad;color:#fff}
+.rate-opts label.on[data-r="يحتاج عناية"]{background:#c17a5f;border-color:#c17a5f;color:#fff}
 .report-view{background:linear-gradient(135deg,#e3dcc0 0%,#a9b98a 45%,#5f7a5a 100%)}
 .report-header{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:3px solid var(--primary);padding-bottom:12px;margin-bottom:14px}
 .report-logo{width:60px;height:60px;margin:0;background:#fff;border-radius:10px;padding:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -102,12 +107,15 @@ th{background:var(--primary);color:#fff}
 .report-table td{background:#fff;padding:9px 6px;text-align:center;font-size:.8rem;font-weight:700;vertical-align:middle}
 .report-table td:first-child{text-align:right;border-radius:0 10px 10px 0;color:var(--primary);font-weight:900}
 .report-table td:last-child{border-radius:10px 0 0 10px}
-.pill-achieve{display:inline-block;background:#e8b923;color:#2a2205;padding:6px 10px;border-radius:14px;font-weight:800;font-size:.76rem;max-width:100%}
+.pill-achieve{display:inline-block;background:#cf9f5c;color:#3a2a0d;padding:6px 10px;border-radius:14px;font-weight:800;font-size:.76rem;max-width:100%}
 .rate-chip{width:100%;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.05rem;color:transparent}
-.rate-chip.blue{background:#2f6fb0}
-.rate-chip.yellow{background:#e8b923}
-.rate-chip.pink{background:#e3a6da}
-.rate-chip.selected{color:#12233a;box-shadow:0 0 0 3px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.28);transform:scale(1.1)}
+.rate-chip.green{background:#a9c9b3}
+.rate-chip.blue{background:#a3bdd4}
+.rate-chip.red{background:#dcb2a3}
+.rate-chip.selected.green{background:#7ea788}
+.rate-chip.selected.blue{background:#6f8fad}
+.rate-chip.selected.red{background:#c17a5f}
+.rate-chip.selected{color:#fff;font-size:1.2rem;text-shadow:0 1px 3px rgba(0,0,0,.35);box-shadow:0 0 0 3px rgba(255,255,255,.75),0 0 0 5px rgba(0,0,0,.1),0 4px 10px rgba(0,0,0,.28);transform:scale(1.14)}
 @media print{#app>*:not(.report-view){display:none!important}body{background:#fff}@page{margin:0}}
 </style>
 </head>
@@ -140,6 +148,51 @@ function toHijri(dateStr){
   const hz=100*(n-49)+i+l4;
   return{day:hy,month:hm,year:Math.round(hz),monthName:HIJRI_MONTHS[hm-1]};
 }
+
+function generateAppIcon(){
+  return new Promise((resolve)=>{
+    try{
+      const img=new Image();
+      img.onload=()=>{
+        const size=512;
+        const canvas=document.createElement('canvas');
+        canvas.width=size;canvas.height=size;
+        const ctx=canvas.getContext('2d');
+        ctx.fillStyle='#ffffff';
+        ctx.fillRect(0,0,size,size);
+        const logoSize=size*0.6;
+        ctx.drawImage(img,(size-logoSize)/2,size*0.05,logoSize,logoSize);
+        ctx.fillStyle='#0b2e59';
+        ctx.textAlign='center';
+        ctx.direction='rtl';
+        ctx.font='900 '+Math.round(size*0.1)+'px Almarai, Tahoma, sans-serif';
+        ctx.fillText('عباقرة',size/2,size*0.78);
+        ctx.fillText('القرآن',size/2,size*0.92);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror=()=>resolve(getLogoBase64());
+      img.src=getLogoBase64();
+    }catch(e){resolve(getLogoBase64());}
+  });
+}
+
+async function setupPWA(){
+  try{
+    const icon=await generateAppIcon();
+    const manifest={name:'عباقرة القرآن',short_name:'عباقرة القرآن',start_url:'.',display:'standalone',background_color:'#ffffff',theme_color:'#0b2e59',icons:[{src:icon,sizes:'512x512',type:'image/png'},{src:icon,sizes:'192x192',type:'image/png'}]};
+    const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+    const link=document.createElement('link');
+    link.rel='manifest';link.href=URL.createObjectURL(blob);
+    document.head.appendChild(link);
+    const touch=document.createElement('link');
+    touch.rel='apple-touch-icon';touch.href=icon;
+    document.head.appendChild(touch);
+    const favicon=document.createElement('link');
+    favicon.rel='icon';favicon.href=icon;
+    document.head.appendChild(favicon);
+  }catch(e){}
+}
+setupPWA();
 
 function ensureDefaults(){
   const s=state();
@@ -384,9 +437,21 @@ function renderNewReport(){
     dateInput.valueAsDate=new Date();
     updateHijri();
     dateInput.addEventListener('change',updateHijri);
-    function updateHijri(){
-      const h=toHijri(dateInput.value);
-      hijriInput.value=`${h.day} ${h.monthName} ${h.year}`;
+    async function updateHijri(){
+      const val=dateInput.value;
+      if(!val) return;
+      const [y,m,d]=val.split('-');
+      hijriInput.placeholder='جارٍ التحقق...';
+      try{
+        const res=await fetch(`https://api.aladhan.com/v1/gToH?date=${d}-${m}-${y}`);
+        if(!res.ok) throw new Error('offline');
+        const data=await res.json();
+        const h=data.data.hijri;
+        hijriInput.value=`${h.day} ${h.month.ar} ${h.year}`;
+      }catch(err){
+        const h=toHijri(val);
+        hijriInput.value=`${h.day} ${h.monthName} ${h.year} (تقريبي - بدون إنترنت)`;
+      }
     }
   },0);
   
@@ -485,7 +550,7 @@ function renderReportView(){
   const header=el('div',{class:'report-header'});
   const titleWrap=el('div',{class:'report-title-wrap'});
   const title=el('div',{class:'report-title'});
-  title.textContent=`التقرير ${reportTypeLabel(r.type)} لأجيال القرآن`;
+  title.textContent=`التقرير ${reportTypeLabel(r.type)} - عباقرة القرآن`;
   const school=el('div',{class:'report-school'});
   school.textContent=s.teacher.school;
   titleWrap.append(title,school);
@@ -497,11 +562,12 @@ function renderReportView(){
   
   const meta=el('div',{class:'report-meta'});
   const item1=el('div',{class:'report-meta-item',html:`<b>العبقري/ة</b> ${stu?stu.name:'-'}`});
+  const item1b=el('div',{class:'report-meta-item',html:`<b>المعلم/ة</b> ${s.teacher.name}`});
   const item2=el('div',{class:'report-meta-item',html:`<b>الحلقة</b> ${s.teacher.halaqa}`});
   const item3=el('div',{class:'report-meta-item',html:`<b>التاريخ</b> ${new Date(r.date).toLocaleDateString('ar-SA')}`});
   const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b> ${r.hijri}`});
   const item5=el('div',{class:'report-meta-item',style:'grid-column:span 2',html:`<b>الفترة</b> ${r.period}`});
-  meta.append(item1,item2,item3,item4,item5);
+  meta.append(item1,item1b,item2,item3,item4,item5);
   c.appendChild(meta);
   
   const table=el('table',{class:'report-table'});
@@ -512,9 +578,9 @@ function renderReportView(){
     const td1=el('td',{html:`<b>${e.subject}</b>`});
     const td2=el('td',{html:`<span class="pill-achieve">${e.text||'-'}</span>`});
     const chip=(name,cls)=>`<div class="rate-chip ${cls}${e.rating===name?' selected':''}">${e.rating===name?'✔':''}</div>`;
-    const td3=el('td',{html:chip('ممتاز','blue')});
-    const td4=el('td',{html:chip('جيد','yellow')});
-    const td5=el('td',{html:chip('يحتاج عناية','pink')});
+    const td3=el('td',{html:chip('ممتاز','green')});
+    const td4=el('td',{html:chip('جيد','blue')});
+    const td5=el('td',{html:chip('يحتاج عناية','red')});
     tr.append(td1,td2,td3,td4,td5);
     table.appendChild(tr);
   });
@@ -522,7 +588,7 @@ function renderReportView(){
   
   const actions=el('div',{class:'footer-actions'});
   const back=el('button',{class:'btn-outline'});
-  back.textContent='رجوع';
+  back.textContent='⬅️ رجوع للأرشيف';
   back.addEventListener('click',()=>{route='archive';window._viewRep=null;render();});
   
   const pdfBtn=el('button',{class:'btn-primary'});
@@ -557,10 +623,33 @@ function renderReportView(){
     pdfBtn.disabled=false;
   });
   
+  const imgBtn=el('button',{class:'btn-outline'});
+  imgBtn.textContent='🖼️ صورة التقرير';
+  imgBtn.addEventListener('click',async()=>{
+    imgBtn.disabled=true;
+    actions.style.display='none';
+    try{
+      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
+      canvas.toBlob(async(blob)=>{
+        const fname=`تقرير_${stu?stu.name:'الطالب'}.png`;
+        const file=new File([blob],fname,{type:'image/png'});
+        if(navigator.canShare&&navigator.canShare({files:[file]})){
+          try{await navigator.share({files:[file],title:fname,text:'تقرير عبقري القرآن'});}catch(e){}
+        } else {
+          const url=URL.createObjectURL(blob);
+          const a=document.createElement('a');a.href=url;a.download=fname;a.click();
+          alert('تم تنزيل صورة التقرير، يمكنك مشاركتها من معرض الصور');
+        }
+        actions.style.display='';
+        imgBtn.disabled=false;
+      },'image/png');
+    }catch(err){alert('تعذر إنشاء الصورة');actions.style.display='';imgBtn.disabled=false;}
+  });
+  
   const waBtn=el('button',{class:'btn-wa'});
   waBtn.textContent='💬 واتساب';
   waBtn.addEventListener('click',()=>{
-    let txt=`التقرير ${reportTypeLabel(r.type)}\n${s.teacher.school}\nالطالب: ${stu?stu.name:'-'}\nالحلقة: ${s.teacher.halaqa}\nالتاريخ: ${new Date(r.date).toLocaleDateString('ar-SA')}\nالهجري: ${r.hijri}\nالفترة: ${r.period}\n\n`;
+    let txt=`التقرير ${reportTypeLabel(r.type)} - عباقرة القرآن\n${s.teacher.school}\nالعبقري/ة: ${stu?stu.name:'-'}\nالمعلم/ة: ${s.teacher.name}\nالحلقة: ${s.teacher.halaqa}\nالتاريخ: ${new Date(r.date).toLocaleDateString('ar-SA')}\nالهجري: ${r.hijri}\nالفترة: ${r.period}\n\n`;
     r.entries.forEach(e=>{txt+=`${e.subject}: ${e.text||'-'} | ${e.rating||'-'}\n`;});
     window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
   });
@@ -569,7 +658,7 @@ function renderReportView(){
   del.textContent='🗑️ حذف';
   del.addEventListener('click',()=>{if(confirm('حذف؟')){s.reports=s.reports.filter(x=>x.id!==r.id);save();route='archive';window._viewRep=null;render();}});
   
-  actions.append(back,pdfBtn,waBtn,del);
+  actions.append(back,pdfBtn,imgBtn,waBtn,del);
   c.appendChild(actions);
   return c;
 }
