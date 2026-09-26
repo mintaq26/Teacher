@@ -85,7 +85,8 @@ nav.tabs button.active{background:var(--primary);color:#fff;border:none}
 table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:12px;background:#fff;border-radius:8px;overflow:hidden}
 th,td{padding:10px 8px;text-align:right;border-bottom:1px solid #ddd;font-weight:700}
 th{background:var(--primary);color:#fff}
-.footer-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:14px}
+.footer-actions{margin-top:14px}
+.footer-actions-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
 .footer-actions button{width:100%;font-size:.85rem;padding:12px 8px;margin-top:0}
 .pill{display:inline-block;padding:6px 12px;border-radius:16px;font-size:.8rem;font-weight:800;white-space:nowrap;text-align:center}
 .pill-success{background:#c8e0d0;color:var(--green)}
@@ -101,12 +102,7 @@ th{background:var(--primary);color:#fff}
 .report-title{color:#12233a;font-size:1.35rem;font-weight:900;margin:0 0 4px}
 .report-school{color:#243b2a;font-size:.85rem;font-weight:700}
 .report-table{width:100%;border-collapse:separate;border-spacing:0 6px;margin-top:12px}
-.report-table th{color:#fff;font-size:.72rem;padding:9px 4px;text-align:center;font-weight:800}
-.report-table th:nth-child(1){background:#2a4d6e}
-.report-table th:nth-child(2){background:#b8863f}
-.report-table th:nth-child(3){background:#5f9470}
-.report-table th:nth-child(4){background:#4f7ea3}
-.report-table th:nth-child(5){background:#b8654a}
+.report-table th{background:#f0ebe0;color:var(--primary);font-size:.75rem;padding:10px 4px;text-align:center;font-weight:800;border-bottom:2px solid var(--primary)}
 .report-table th:first-child{border-radius:8px 0 0 8px}
 .report-table th:last-child{border-radius:0 8px 8px 0}
 .report-table td{background:#fff;padding:9px 6px;text-align:center;font-size:.8rem;font-weight:700;vertical-align:middle}
@@ -279,7 +275,7 @@ function renderAuth(){
     form.innerHTML=`
       <label>اسم المستخدم</label><input name="u" required>
       <label>كلمة السر</label><input name="p" type="password" required>
-      <label>اسم المعلم/المعلمة</label><input name="name" required>
+      <label>اسم المعلم/ة</label><input name="name" required>
       <label>المدرسة</label><input name="school" value="المدرسة القرآنية الوقفية">
       <label>الحلقة</label><input name="halaqa" required>
       <button class="btn-primary" type="submit">إنشاء حساب</button>`;
@@ -604,7 +600,7 @@ function renderReportView(){
     actions.style.display='none';
     try{
       if(document.fonts&&document.fonts.ready) await document.fonts.ready;
-      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff',foreignObjectRendering:true});
+      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
       const imgData=canvas.toDataURL('image/png');
       const {jsPDF}=window.jspdf;
       const pdf=new jsPDF('p','mm','a4');
@@ -636,7 +632,7 @@ function renderReportView(){
     actions.style.display='none';
     try{
       if(document.fonts&&document.fonts.ready) await document.fonts.ready;
-      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff',foreignObjectRendering:true});
+      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
       canvas.toBlob(async(blob)=>{
         const fname=`تقرير_${stu?stu.name:'الطالب'}.png`;
         const file=new File([blob],fname,{type:'image/png'});
@@ -665,7 +661,13 @@ function renderReportView(){
   del.textContent='🗑️ حذف';
   del.addEventListener('click',()=>{if(confirm('حذف؟')){s.reports=s.reports.filter(x=>x.id!==r.id);save();route='archive';window._viewRep=null;render();}});
   
-  actions.append(back,pdfBtn,del,imgBtn,waBtn);
+  actions.appendChild(el('div',{class:'footer-actions-row'}));
+  const topRow=actions.firstChild;
+  topRow.append(back,pdfBtn,imgBtn,waBtn);
+  const delWrap=el('div',{style:'display:flex;justify-content:center;margin-top:10px'});
+  del.style.maxWidth='220px';del.style.width='100%';
+  delWrap.appendChild(del);
+  actions.appendChild(delWrap);
   c.appendChild(actions);
   return c;
 }
