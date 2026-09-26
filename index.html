@@ -40,8 +40,8 @@ textarea{min-height:80px;resize:vertical}
 button{cursor:pointer;font-family:inherit;font-weight:800;border:none;border-radius:10px;padding:12px 16px;font-size:.9rem;transition:all 0.3s}
 .btn-primary{background:linear-gradient(135deg,var(--primary),#2a6db3);color:#fff;width:100%;margin-top:14px;padding:14px 16px;font-size:.95rem}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(30,90,142,.25)}
-.btn-outline{background:transparent;border:2px solid var(--primary);color:var(--primary)}
-.btn-outline:hover{background:rgba(30,90,142,.05)}
+.btn-outline{background:#eef1e9;border:2px solid #cdd8c8;color:var(--primary)}
+.btn-outline:hover{background:#e4e9dd}
 .btn-sm{padding:9px 14px;font-size:.85rem;margin-top:0}
 .btn-danger{background:#c17a5f;color:#fff;font-weight:800}
 .btn-danger:hover{background:#a86555}
@@ -101,21 +101,26 @@ th{background:var(--primary);color:#fff}
 .report-title{color:#12233a;font-size:1.35rem;font-weight:900;margin:0 0 4px}
 .report-school{color:#243b2a;font-size:.85rem;font-weight:700}
 .report-table{width:100%;border-collapse:separate;border-spacing:0 6px;margin-top:12px}
-.report-table th{background:var(--primary);color:#fff;font-size:.72rem;padding:8px 4px;text-align:center;font-weight:800}
+.report-table th{color:#fff;font-size:.72rem;padding:9px 4px;text-align:center;font-weight:800}
+.report-table th:nth-child(1){background:#2a4d6e}
+.report-table th:nth-child(2){background:#b8863f}
+.report-table th:nth-child(3){background:#5f9470}
+.report-table th:nth-child(4){background:#4f7ea3}
+.report-table th:nth-child(5){background:#b8654a}
 .report-table th:first-child{border-radius:8px 0 0 8px}
 .report-table th:last-child{border-radius:0 8px 8px 0}
 .report-table td{background:#fff;padding:9px 6px;text-align:center;font-size:.8rem;font-weight:700;vertical-align:middle}
 .report-table td:first-child{text-align:right;border-radius:0 10px 10px 0;color:var(--primary);font-weight:900}
 .report-table td:last-child{border-radius:10px 0 0 10px}
-.pill-achieve{display:inline-block;background:#cf9f5c;color:#3a2a0d;padding:6px 10px;border-radius:14px;font-weight:800;font-size:.76rem;max-width:100%}
+.pill-achieve{display:flex;align-items:center;justify-content:center;min-height:32px;width:100%;box-sizing:border-box;background:#e0b876;color:#3a2a0d;padding:6px 10px;border-radius:9px;font-weight:800;font-size:.76rem;text-align:center}
 .rate-chip{width:100%;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.05rem;color:transparent}
 .rate-chip.green{background:#a9c9b3}
 .rate-chip.blue{background:#a3bdd4}
 .rate-chip.red{background:#dcb2a3}
-.rate-chip.selected.green{background:#7ea788}
-.rate-chip.selected.blue{background:#6f8fad}
-.rate-chip.selected.red{background:#c17a5f}
-.rate-chip.selected{color:#fff;font-size:1.2rem;text-shadow:0 1px 3px rgba(0,0,0,.35);box-shadow:0 0 0 3px rgba(255,255,255,.75),0 0 0 5px rgba(0,0,0,.1),0 4px 10px rgba(0,0,0,.28);transform:scale(1.14)}
+.rate-chip.selected.green{background:#5f9470}
+.rate-chip.selected.blue{background:#4f7ea3}
+.rate-chip.selected.red{background:#b8654a}
+.rate-chip.selected{color:#fff;font-size:1.1rem;text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(0,0,0,.35)}
 @media print{#app>*:not(.report-view){display:none!important}body{background:#fff}@page{margin:0}}
 </style>
 </head>
@@ -564,10 +569,10 @@ function renderReportView(){
   const item1=el('div',{class:'report-meta-item',html:`<b>العبقري/ة</b> ${stu?stu.name:'-'}`});
   const item1b=el('div',{class:'report-meta-item',html:`<b>المعلم/ة</b> ${s.teacher.name}`});
   const item2=el('div',{class:'report-meta-item',html:`<b>الحلقة</b> ${s.teacher.halaqa}`});
+  const item5=el('div',{class:'report-meta-item',html:`<b>الفترة</b> ${r.period}`});
   const item3=el('div',{class:'report-meta-item',html:`<b>التاريخ</b> ${new Date(r.date).toLocaleDateString('ar-SA')}`});
   const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b> ${r.hijri}`});
-  const item5=el('div',{class:'report-meta-item',style:'grid-column:span 2',html:`<b>الفترة</b> ${r.period}`});
-  meta.append(item1,item1b,item2,item3,item4,item5);
+  meta.append(item1,item1b,item2,item5,item3,item4);
   c.appendChild(meta);
   
   const table=el('table',{class:'report-table'});
@@ -576,7 +581,7 @@ function renderReportView(){
   r.entries.forEach(e=>{
     const tr=el('tr',{});
     const td1=el('td',{html:`<b>${e.subject}</b>`});
-    const td2=el('td',{html:`<span class="pill-achieve">${e.text||'-'}</span>`});
+    const td2=el('td',{html:`<span class="pill-achieve">${e.text?e.text:'—'}</span>`});
     const chip=(name,cls)=>`<div class="rate-chip ${cls}${e.rating===name?' selected':''}">${e.rating===name?'✔':''}</div>`;
     const td3=el('td',{html:chip('ممتاز','green')});
     const td4=el('td',{html:chip('جيد','blue')});
@@ -598,7 +603,8 @@ function renderReportView(){
     pdfBtn.disabled=true;
     actions.style.display='none';
     try{
-      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
+      if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff',foreignObjectRendering:true});
       const imgData=canvas.toDataURL('image/png');
       const {jsPDF}=window.jspdf;
       const pdf=new jsPDF('p','mm','a4');
@@ -629,7 +635,8 @@ function renderReportView(){
     imgBtn.disabled=true;
     actions.style.display='none';
     try{
-      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
+      if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff',foreignObjectRendering:true});
       canvas.toBlob(async(blob)=>{
         const fname=`تقرير_${stu?stu.name:'الطالب'}.png`;
         const file=new File([blob],fname,{type:'image/png'});
@@ -658,7 +665,7 @@ function renderReportView(){
   del.textContent='🗑️ حذف';
   del.addEventListener('click',()=>{if(confirm('حذف؟')){s.reports=s.reports.filter(x=>x.id!==r.id);save();route='archive';window._viewRep=null;render();}});
   
-  actions.append(back,pdfBtn,imgBtn,waBtn,del);
+  actions.append(back,pdfBtn,del,imgBtn,waBtn);
   c.appendChild(actions);
   return c;
 }
