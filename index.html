@@ -128,7 +128,14 @@ th{background:var(--primary);color:#fff}
 const K='qra_pro';
 function load(){try{return JSON.parse(localStorage.getItem(K))||{}}catch(e){return{}}}
 function state(){window._st=window._st||load();return window._st}
-function save(){localStorage.setItem(K,JSON.stringify(state()))}
+function save(){
+  const st=state();
+  if(st._activeAccountId&&st._accounts){
+    const acc=st._accounts.find(a=>a.id===st._activeAccountId);
+    if(acc) acc.data={students:st.students||[],subjects:st.subjects||[],reports:st.reports||[]};
+  }
+  localStorage.setItem(K,JSON.stringify(state()));
+}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 const MASTER_PWD='Oman-25';
 const RATINGS=['ممتاز','جيد','يحتاج عناية'];
@@ -264,7 +271,7 @@ function renderAuth(){
   logoSection.innerHTML+=`<h1>عباقرة القرآن</h1><div class="sub">نظام التقارير الأسبوعية</div>`;
   card.appendChild(logoSection);
   
-  const mode=s._accounts&&s._accounts.length?'login':'register';
+  const mode=(s._accounts&&s._accounts.length&&!window._authForceRegister)?'login':'register';
   const form=el('form',{});
   
   if(mode==='login'){
@@ -272,7 +279,8 @@ function renderAuth(){
       <label>اسم المستخدم</label><input name="u" required>
       <label>كلمة السر</label><input name="p" type="password" required>
       <button class="btn-primary" type="submit">دخول</button>
-      <button type="button" class="btn-outline btn-sm" id="toReg" style="width:100%;margin-top:8px">حساب جديد</button>`;
+      <button type="button" class="btn-outline btn-sm" id="toReg" style="width:100%;margin-top:8px">➕ حساب معلم/ة جديد</button>
+      <button type="button" class="btn-outline btn-sm" id="forgotBtn" style="width:100%;margin-top:8px">🔑 نسيت كلمة السر؟</button>`;
   } else {
     form.innerHTML=`
       <label>اسم المستخدم</label><input name="u" required>
@@ -280,7 +288,8 @@ function renderAuth(){
       <label>اسم المعلم/ة</label><input name="name" required>
       <label>المدرسة</label><input name="school" value="المدرسة القرآنية الوقفية">
       <label>الحلقة</label><input name="halaqa" required>
-      <button class="btn-primary" type="submit">إنشاء حساب</button>`;
+      <button class="btn-primary" type="submit">إنشاء حساب</button>
+      ${s._accounts&&s._accounts.length?'<button type="button" class="btn-outline btn-sm" id="toLogin" style="width:100%;margin-top:8px">لدي حساب بالفعل - دخول</button>':''}`;
   }
   
   card.appendChild(form);
@@ -294,14 +303,25 @@ function renderAuth(){
     if(mode==='login'){
       const acc=accounts.find(a=>a.username===fd.get('u')&&a.password===fd.get('p'));
       if(!acc){alert('بيانات غير صحيحة');return;}
+      if(!acc.data) acc.data={students:s.students||[],subjects:s.subjects||[],reports:s.reports||[]};
       s.teacher={...acc};
+      s._activeAccountId=acc.id;
+      s.students=acc.data.students;
+      s.subjects=acc.data.subjects;
+      s.reports=acc.data.reports;
+      window._authForceRegister=false;
       save();
       render();
     } else {
       if(accounts.some(a=>a.username===fd.get('u'))){alert('المستخدم موجود');return;}
-      const acc={id:uid(),username:fd.get('u'),password:fd.get('p'),name:fd.get('name'),school:fd.get('school'),halaqa:fd.get('halaqa')};
-      s._accounts=[acc];
+      const acc={id:uid(),username:fd.get('u'),password:fd.get('p'),name:fd.get('name'),school:fd.get('school'),halaqa:fd.get('halaqa'),data:{students:[],subjects:['القرآن الكريم','اللغة العربية','الأعداد القرآنية','اللغة الإنجليزية','أخط بيدي','قطوف دانية','منظومة الأخلاق'],reports:[]}};
+      s._accounts=[...accounts,acc];
       s.teacher={...acc};
+      s._activeAccountId=acc.id;
+      s.students=acc.data.students;
+      s.subjects=acc.data.subjects;
+      s.reports=acc.data.reports;
+      window._authForceRegister=false;
       save();
       render();
     }
@@ -309,7 +329,23 @@ function renderAuth(){
   
   setTimeout(()=>{
     const regBtn=document.getElementById('toReg');
-    if(regBtn) regBtn.addEventListener('click',()=>{s._accounts=[];save();render();});
+    if(regBtn) regBtn.addEventListener('click',()=>{window._authForceRegister=true;render();});
+    const loginBtn=document.getElementById('toLogin');
+    if(loginBtn) loginBtn.addEventListener('click',()=>{window._authForceRegister=false;render();});
+    const forgotBtn=document.getElementById('forgotBtn');
+    if(forgotBtn) forgotBtn.addEventListener('click',()=>{
+      const u=prompt('أدخل اسم المستخدم:');
+      if(!u)return;
+      const acc=(s._accounts||[]).find(a=>a.username===u);
+      if(!acc){alert('لا يوجد حساب بهذا الاسم');return;}
+      const key=prompt('أدخل المفتاح الرئيسي (Master Key):');
+      if(key!=='Oman-2025'){alert('المفتاح غير صحيح');return;}
+      const np=prompt('أدخل كلمة السر الجديدة:');
+      if(!np){return;}
+      acc.password=np;
+      save();
+      alert('تم تغيير كلمة السر بنجاح، يمكنك تسجيل الدخول الآن');
+    });
   },0);
   
   return wrap;
@@ -325,7 +361,7 @@ function renderTopbar(){
   text.innerHTML=`<div class="name">${s.teacher.name}</div><div class="school">${s.teacher.school}</div>`;
   const btn=el('button',{class:'btn-outline btn-sm topbar-btn'});
   btn.textContent='خروج';
-  btn.addEventListener('click',()=>{delete state().teacher;save();render();});
+  btn.addEventListener('click',()=>{const st=state();delete st.teacher;delete st._activeAccountId;st.students=[];st.subjects=[];st.reports=[];save();render();});
   t.append(logo,text,btn);
   return t;
 }
@@ -700,6 +736,42 @@ function renderSettings(){
     render();
   });
   c.appendChild(form);
+
+  const backupSec=el('div',{style:'margin-top:20px;padding-top:16px;border-top:2px solid #eee'});
+  backupSec.innerHTML=`<h3 style="margin-bottom:10px">النسخ الاحتياطي</h3>`;
+  const backupBtn=el('button',{class:'btn-outline',style:'width:100%;margin-top:0'});
+  backupBtn.textContent='⬇️ تنزيل نسخة احتياطية';
+  backupBtn.addEventListener('click',()=>{
+    const blob=new Blob([JSON.stringify(state())],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`نسخة_احتياطية_${s.teacher.username}.json`;a.click();
+    URL.revokeObjectURL(url);
+  });
+  backupSec.appendChild(backupBtn);
+
+  const restoreLabel=el('label',{style:'display:block;margin-top:10px'});
+  restoreLabel.textContent='استرداد نسخة احتياطية';
+  const restoreInput=el('input',{type:'file',accept:'.json',style:'width:100%'});
+  restoreInput.addEventListener('change',()=>{
+    const file=restoreInput.files[0];
+    if(!file)return;
+    if(!confirm('سيتم استبدال جميع البيانات الحالية بالنسخة المسترجعة. متابعة؟'))return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const data=JSON.parse(reader.result);
+        window._st=data;
+        localStorage.setItem(K,JSON.stringify(data));
+        alert('تم الاسترداد بنجاح');
+        render();
+      }catch(e){alert('ملف غير صالح');}
+    };
+    reader.readAsText(file);
+  });
+  backupSec.append(restoreLabel,restoreInput);
+  c.appendChild(backupSec);
+
   return c;
 }
 
