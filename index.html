@@ -566,7 +566,7 @@ function renderReportView(){
   const meta=el('div',{class:'report-meta'});
   const item1=el('div',{class:'report-meta-item',html:`<b>العبقري/ة</b> ${stu?stu.name:'-'}`});
   const item1b=el('div',{class:'report-meta-item',html:`<b>المعلم/ة</b> ${s.teacher.name}`});
-  const item2=el('div',{class:'report-meta-item',html:`<b>الحلقة</b> ${s.teacher.halaqa}`});
+  const item2=el('div',{class:'report-meta-item',html:`<b>الحلقة</b><span style="white-space:nowrap">${s.teacher.halaqa}</span>`});
   const item5=el('div',{class:'report-meta-item',html:`<b>الفترة</b> ${r.period}`});
   const item3=el('div',{class:'report-meta-item',html:`<b>التاريخ</b> ${new Date(r.date).toLocaleDateString('ar-SA')}`});
   const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b> ${r.hijri}`});
@@ -596,7 +596,7 @@ function renderReportView(){
   back.textContent='⬅️ رجوع للأرشيف';
   back.addEventListener('click',()=>{route='archive';window._viewRep=null;render();});
   
-  const pdfBtn=el('button',{class:'btn-primary'});
+  const pdfBtn=el('button',{class:'btn-outline'});
   pdfBtn.textContent='📄 تحويل PDF ومشاركة';
   pdfBtn.addEventListener('click',async()=>{
     pdfBtn.textContent='جارٍ التحويل...';
@@ -609,11 +609,10 @@ function renderReportView(){
       const {jsPDF}=window.jspdf;
       const pdf=new jsPDF('p','mm','a4');
       const pageW=pdf.internal.pageSize.getWidth(),pageH=pdf.internal.pageSize.getHeight();
-      const imgW=pageW,imgH=canvas.height*imgW/canvas.width;
-      let heightLeft=imgH,position=0;
-      pdf.addImage(imgData,'PNG',0,position,imgW,imgH);
-      heightLeft-=pageH;
-      while(heightLeft>0){position=heightLeft-imgH;pdf.addPage();pdf.addImage(imgData,'PNG',0,position,imgW,imgH);heightLeft-=pageH;}
+      const ratio=Math.min(pageW/canvas.width,pageH/canvas.height);
+      const imgW=canvas.width*ratio,imgH=canvas.height*ratio;
+      const x=(pageW-imgW)/2,y=(pageH-imgH)/2;
+      pdf.addImage(imgData,'PNG',x,y,imgW,imgH);
       const fname=`تقرير_${stu?stu.name:'الطالب'}.pdf`;
       const blob=pdf.output('blob');
       const file=new File([blob],fname,{type:'application/pdf'});
@@ -653,7 +652,7 @@ function renderReportView(){
     }catch(err){alert('تعذر إنشاء الصورة');actions.style.display='';imgBtn.disabled=false;}
   });
   
-  const waBtn=el('button',{class:'btn-wa'});
+  const waBtn=el('button',{class:'btn-outline'});
   waBtn.textContent='💬 واتساب';
   waBtn.addEventListener('click',()=>{
     let txt=`التقرير ${reportTypeLabel(r.type)} - عباقرة القرآن\n${s.teacher.school}\nالعبقري/ة: ${stu?stu.name:'-'}\nالمعلم/ة: ${s.teacher.name}\nالحلقة: ${s.teacher.halaqa}\nالتاريخ: ${new Date(r.date).toLocaleDateString('ar-SA')}\nالهجري: ${r.hijri}\nالفترة: ${r.period}\n\n`;
@@ -661,7 +660,7 @@ function renderReportView(){
     window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
   });
   
-  const del=el('button',{class:'btn-danger'});
+  const del=el('button',{class:'btn-outline'});
   del.textContent='🗑️ حذف';
   del.addEventListener('click',()=>{if(confirm('حذف؟')){s.reports=s.reports.filter(x=>x.id!==r.id);save();route='archive';window._viewRep=null;render();}});
   
@@ -671,8 +670,7 @@ function renderReportView(){
   const midRow=el('div',{class:'footer-actions-row'});
   midRow.append(pdfBtn,imgBtn,waBtn);
   actions.appendChild(midRow);
-  const delWrap=el('div',{style:'display:flex;justify-content:center;margin-top:10px'});
-  del.style.maxWidth='220px';del.style.width='100%';
+  const delWrap=el('div',{style:'margin-top:10px'});
   delWrap.appendChild(del);
   actions.appendChild(delWrap);
   c.appendChild(actions);
