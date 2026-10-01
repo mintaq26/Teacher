@@ -100,6 +100,7 @@ th{background:var(--primary);color:#fff}
 .report-logo{width:60px;height:60px;margin:0;background:#fff;border-radius:10px;padding:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .report-title-wrap{flex:1;text-align:center}
 .report-title{color:#12233a;font-size:1.35rem;font-weight:900;margin:0 0 4px}
+.report-org{color:#12233a;font-size:.9rem;font-weight:800;margin:0 0 4px}
 .report-school{color:#243b2a;font-size:.85rem;font-weight:700}
 .report-table{width:100%;border-collapse:separate;border-spacing:7px 7px;margin-top:12px;table-layout:fixed}
 .report-table th:nth-child(1),.report-table td:nth-child(1){width:19%}
@@ -110,7 +111,7 @@ th{background:var(--primary);color:#fff}
 .report-table th{background:#f0ebe0;color:var(--primary);font-size:.75rem;padding:10px 4px;text-align:center;font-weight:800;border-bottom:2px solid var(--primary);border-radius:8px}
 .report-table td{background:#fff;padding:9px 6px;text-align:center;font-size:.8rem;font-weight:700;vertical-align:middle;border-radius:10px}
 .report-table td:first-child{text-align:right;color:var(--primary);font-weight:900}
-.pill-achieve{display:flex;align-items:center;justify-content:center;min-height:32px;width:100%;box-sizing:border-box;background:#e0b876;color:#3a2a0d;padding:6px 10px;border-radius:9px;font-weight:800;font-size:.76rem;text-align:center}
+.pill-achieve{display:block;width:100%;box-sizing:border-box;background:#e0b876;color:#3a2a0d;padding:8px 10px;border-radius:9px;font-weight:800;font-size:.76rem;text-align:center;line-height:1.5;overflow-wrap:break-word}
 .rate-chip{width:100%;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.05rem;color:transparent;background:#f1efe7;border:2px solid #d9d4c5;box-sizing:border-box}
 .rate-chip.green{border-color:#5f9470}
 .rate-chip.blue{border-color:#4f7ea3}
@@ -371,7 +372,7 @@ function renderTabs(){
   const n=el('nav',{class:'tabs'});
   tabs.forEach(([k,l])=>{
     const b=el('button',{class:route===k?'active':''},l);
-    b.addEventListener('click',()=>{route=k;render()});
+    b.addEventListener('click',()=>{route=k;window._editRep=null;render()});
     n.appendChild(b);
   });
   return n;
@@ -455,7 +456,8 @@ function renderNewReport(){
   const s=state();
   const c=el('div',{class:'card'});
   if(!s.students||!s.students.length){c.innerHTML='<h2>تقرير</h2><div class="empty">أضف طلاب أولاً</div>';return c;}
-  c.innerHTML=`<h2>تقرير جديد</h2>`;
+  const editRep=window._editRep?s.reports.find(x=>x.id===window._editRep):null;
+  c.innerHTML=`<h2>${editRep?'تعديل التقرير':'تقرير جديد'}</h2>`;
   const top=el('div',{});
   top.innerHTML=`
     <label>الطالب</label>
@@ -473,8 +475,16 @@ function renderNewReport(){
   setTimeout(()=>{
     const dateInput=document.getElementById('rdate');
     const hijriInput=document.getElementById('rdate-hijri');
-    dateInput.valueAsDate=new Date();
-    updateHijri();
+    if(editRep){
+      document.getElementById('stu').value=editRep.studentId;
+      document.getElementById('rtype').value=editRep.type;
+      document.getElementById('rperiod').value=editRep.period;
+      dateInput.value=editRep.date;
+      hijriInput.value=editRep.hijri;
+    } else {
+      dateInput.valueAsDate=new Date();
+      updateHijri();
+    }
     dateInput.addEventListener('change',updateHijri);
     async function updateHijri(){
       const val=dateInput.value;
@@ -503,6 +513,18 @@ function renderNewReport(){
   });
   c.appendChild(subWrap);
   
+  if(editRep){
+    editRep.entries.forEach(en=>{
+      const safe=en.subject.replace(/\s+/g,'_');
+      const ta=subWrap.querySelector(`textarea[data-subj="${en.subject}"]`);
+      if(ta) ta.value=en.text||'';
+      if(en.rating){
+        const inp=subWrap.querySelector(`input[name="rate_${safe}"][value="${en.rating}"]`);
+        if(inp){inp.checked=true;inp.closest('label').classList.add('on');}
+      }
+    });
+  }
+
   subWrap.querySelectorAll('.rate-opts').forEach(box=>{
     box.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',()=>{
       box.querySelectorAll('label').forEach(l=>l.classList.remove('on'));
@@ -510,7 +532,7 @@ function renderNewReport(){
     }));
   });
   
-  const saveBtn=el('button',{class:'btn-primary'},'حفظ');
+  const saveBtn=el('button',{class:'btn-primary'},editRep?'💾 حفظ التعديل':'حفظ');
   saveBtn.addEventListener('click',()=>{
     const entries=s.subjects.map(sub=>{
       const safe=sub.replace(/\s+/g,'_');
@@ -518,8 +540,13 @@ function renderNewReport(){
       const rEl=subWrap.querySelector(`input[name="rate_${safe}"]:checked`);
       return{subject:sub,text,rating:rEl?rEl.value:''};
     });
-    const rep={id:uid(),studentId:document.getElementById('stu').value,type:document.getElementById('rtype').value,period:document.getElementById('rperiod').value,date:document.getElementById('rdate').value,hijri:document.getElementById('rdate-hijri').value,entries};
-    s.reports.unshift(rep);
+    const data={studentId:document.getElementById('stu').value,type:document.getElementById('rtype').value,period:document.getElementById('rperiod').value,date:document.getElementById('rdate').value,hijri:document.getElementById('rdate-hijri').value,entries};
+    if(editRep){
+      Object.assign(editRep,data);
+      window._editRep=null;
+    } else {
+      s.reports.unshift({id:uid(),...data});
+    }
     save();
     alert('تم الحفظ');
     route='archive';
@@ -548,6 +575,7 @@ function renderArchive(){
       const row=el('div',{class:'item-row'});
       const typeText=reportTypeLabel(r.type);
       row.innerHTML=`<span><b>${stu?stu.name:'-'}</b><br><span style="font-size:.8rem;color:#666">${typeText} • ${r.period}</span></span>`;
+      const btns=el('div',{style:'display:flex;gap:6px'});
       const view=el('button',{class:'btn-outline btn-sm'});
       view.textContent='عرض';
       view.addEventListener('click',()=>{
@@ -555,7 +583,15 @@ function renderArchive(){
         route='view';
         render();
       });
-      row.appendChild(view);
+      const editB=el('button',{class:'btn-outline btn-sm'});
+      editB.textContent='✏️ تعديل';
+      editB.addEventListener('click',()=>{
+        window._editRep=r.id;
+        route='newreport';
+        render();
+      });
+      btns.append(view,editB);
+      row.appendChild(btns);
       section.appendChild(row);
     });
     c.appendChild(section);
@@ -589,10 +625,12 @@ function renderReportView(){
   const header=el('div',{class:'report-header'});
   const titleWrap=el('div',{class:'report-title-wrap'});
   const title=el('div',{class:'report-title'});
-  title.textContent=`التقرير ${reportTypeLabel(r.type)} - عباقرة القرآن`;
+  title.textContent=`التقرير ${reportTypeLabel(r.type)}`;
+  const org=el('div',{class:'report-org'});
+  org.textContent='- المدرسة القرآنية الوقفية بولاية العامرات';
   const school=el('div',{class:'report-school'});
   school.textContent=s.teacher.school;
-  titleWrap.append(title,school);
+  titleWrap.append(title,org,school);
   const logo=el('div',{class:'report-logo'});
   const logoImg=el('img',{src:getLogoBase64()});
   logo.appendChild(logoImg);
@@ -600,12 +638,13 @@ function renderReportView(){
   c.appendChild(header);
   
   const meta=el('div',{class:'report-meta'});
-  const item1=el('div',{class:'report-meta-item',html:`<b>العبقري/ة</b> ${stu?stu.name:'-'}`});
-  const item1b=el('div',{class:'report-meta-item',html:`<b>المعلم/ة</b> ${s.teacher.name}`});
-  const item2=el('div',{class:'report-meta-item',html:`<b>الحلقة</b><span style="white-space:nowrap">${s.teacher.halaqa}</span>`});
-  const item5=el('div',{class:'report-meta-item',html:`<b>الفترة</b> ${r.period}`});
-  const item3=el('div',{class:'report-meta-item',html:`<b>التاريخ</b> ${new Date(r.date).toLocaleDateString('ar-SA')}`});
-  const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b> ${r.hijri}`});
+  const nw=t=>`<span style="white-space:nowrap">${t}</span>`;
+  const item1=el('div',{class:'report-meta-item',html:`<b>العبقري/ة</b>${nw(stu?stu.name:'-')}`});
+  const item1b=el('div',{class:'report-meta-item',html:`<b>المعلم/ة</b>${nw(s.teacher.name)}`});
+  const item2=el('div',{class:'report-meta-item',html:`<b>الحلقة</b>${nw(s.teacher.halaqa)}`});
+  const item5=el('div',{class:'report-meta-item',html:`<b>الفترة</b>${nw(r.period)}`});
+  const item3=el('div',{class:'report-meta-item',html:`<b>التاريخ</b>${nw(new Date(r.date).toLocaleDateString('ar-SA'))}`});
+  const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b>${nw(r.hijri)}`});
   meta.append(item1,item1b,item2,item5,item3,item4);
   c.appendChild(meta);
   
@@ -691,7 +730,7 @@ function renderReportView(){
   const waBtn=el('button',{class:'btn-outline'});
   waBtn.textContent='💬 واتساب';
   waBtn.addEventListener('click',()=>{
-    let txt=`التقرير ${reportTypeLabel(r.type)} - عباقرة القرآن\n${s.teacher.school}\nالعبقري/ة: ${stu?stu.name:'-'}\nالمعلم/ة: ${s.teacher.name}\nالحلقة: ${s.teacher.halaqa}\nالتاريخ: ${new Date(r.date).toLocaleDateString('ar-SA')}\nالهجري: ${r.hijri}\nالفترة: ${r.period}\n\n`;
+    let txt=`التقرير ${reportTypeLabel(r.type)}\n- المدرسة القرآنية الوقفية بولاية العامرات\n${s.teacher.school}\nالعبقري/ة: ${stu?stu.name:'-'}\nالمعلم/ة: ${s.teacher.name}\nالحلقة: ${s.teacher.halaqa}\nالتاريخ: ${new Date(r.date).toLocaleDateString('ar-SA')}\nالهجري: ${r.hijri}\nالفترة: ${r.period}\n\n`;
     r.entries.forEach(e=>{txt+=`${e.subject}: ${e.text||'-'} | ${e.rating||'-'}\n`;});
     window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
   });
