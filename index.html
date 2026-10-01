@@ -111,7 +111,7 @@ th{background:var(--primary);color:#fff}
 .report-table th{background:#f0ebe0;color:var(--primary);font-size:.75rem;padding:10px 4px;text-align:center;font-weight:800;border-bottom:2px solid var(--primary);border-radius:8px}
 .report-table td{background:#fff;padding:9px 6px;text-align:center;font-size:.8rem;font-weight:700;vertical-align:middle;border-radius:10px}
 .report-table td:first-child{text-align:right;color:var(--primary);font-weight:900}
-.pill-achieve{display:block;width:100%;box-sizing:border-box;background:#e0b876;color:#3a2a0d;padding:8px 10px;border-radius:9px;font-weight:800;font-size:.76rem;text-align:center;line-height:1.5;overflow-wrap:break-word}
+.pill-achieve{display:block;width:100%;box-sizing:border-box;background:#e0b876;color:#3a2a0d;padding:8px 10px;border-radius:9px;font-weight:800;font-size:.76rem;text-align:center;line-height:1.6;white-space:normal;word-spacing:normal}
 .rate-chip{width:100%;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.05rem;color:transparent;background:#f1efe7;border:2px solid #d9d4c5;box-sizing:border-box}
 .rate-chip.green{border-color:#5f9470}
 .rate-chip.blue{border-color:#4f7ea3}
@@ -599,6 +599,18 @@ function renderArchive(){
   return c;
 }
 
+function wrapTextLines(text,maxLen){
+  const words=(text||'').split(/\s+/).filter(Boolean);
+  const lines=[];
+  let cur='';
+  words.forEach(w=>{
+    if(cur&&(cur+' '+w).length>maxLen){lines.push(cur);cur=w;}
+    else cur=cur?cur+' '+w:w;
+  });
+  if(cur) lines.push(cur);
+  return lines.map(l=>l.replace(/</g,'&lt;').replace(/>/g,'&gt;')).join('<br>');
+}
+
 function reportTypeLabel(type){
   if(!type) return '';
   if(type.includes('أسبوعي')) return 'الأسبوعي';
@@ -654,7 +666,7 @@ function renderReportView(){
   r.entries.forEach(e=>{
     const tr=el('tr',{});
     const td1=el('td',{html:`<b>${e.subject}</b>`});
-    const td2=el('td',{html:`<span class="pill-achieve">${e.text?e.text:'—'}</span>`});
+    const td2=el('td',{html:`<span class="pill-achieve">${e.text?wrapTextLines(e.text,22):'—'}</span>`});
     const chip=(name,cls)=>`<div class="rate-chip ${cls}${e.rating===name?' selected':''}">${e.rating===name?'✔':''}</div>`;
     const td3=el('td',{html:chip('ممتاز','green')});
     const td4=el('td',{html:chip('جيد','blue')});
