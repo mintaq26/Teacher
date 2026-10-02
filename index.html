@@ -120,6 +120,37 @@ th{background:var(--primary);color:#fff}
 .rate-chip.selected.blue{background:#4f7ea3}
 .rate-chip.selected.red{background:#b8654a}
 .rate-chip.selected{color:#fff;font-size:1.1rem;text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(0,0,0,.35)}
+
+/* ===== تعديلات: التواريخ، نص المادة، نص الإنجاز، التقرير بالعرض ===== */
+.dt{direction:ltr;unicode-bidi:isolate;display:inline-block;white-space:nowrap;font-variant-numeric:lining-nums}
+.subj-ltr{direction:ltr;unicode-bidi:isolate;display:inline-block;text-align:left}
+.report-table{border-spacing:5px 6px}
+.report-table th:nth-child(1),.report-table td:nth-child(1){width:19%}
+.report-table th:nth-child(2),.report-table td:nth-child(2){width:43%}
+.report-table th:nth-child(3),.report-table td:nth-child(3),
+.report-table th:nth-child(4),.report-table td:nth-child(4),
+.report-table th:nth-child(5),.report-table td:nth-child(5){width:12.66%}
+.report-table td.ach-cell{padding:0;background:transparent;border-radius:0}
+.pill-achieve{display:block;width:100%;min-height:100%;box-sizing:border-box;padding:9px 10px;white-space:normal;overflow-wrap:break-word;word-break:normal;hyphens:none;text-align:center;line-height:1.7}
+.pill-achieve bdi{unicode-bidi:isolate}
+/* التقرير بالعرض (للتصدير فقط) */
+.ls-sheet{position:fixed;left:-99999px;top:0;width:1123px;box-sizing:border-box;padding:22px 26px;border-radius:14px;color:#1a1a1a;font-family:'Almarai',sans-serif;direction:rtl;background:linear-gradient(135deg,#e3dcc0 0%,#a9b98a 45%,#5f7a5a 100%)}
+.ls-head{display:flex;align-items:center;gap:16px;border-bottom:3px solid #1e5a8e;padding-bottom:10px;margin-bottom:12px}
+.ls-head .report-logo{width:64px;height:64px}
+.ls-head .ls-titles{flex:1;text-align:center}
+.ls-meta{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px}
+.ls-meta .report-meta-item{padding:7px 8px;font-size:.82rem}
+.ls-table{width:100%;border-collapse:separate;border-spacing:6px 6px;table-layout:fixed}
+.ls-table th{background:#f0ebe0;color:#1e5a8e;font-size:.85rem;padding:8px 4px;text-align:center;font-weight:800;border-bottom:2px solid #1e5a8e;border-radius:8px}
+.ls-table td{background:#fff;padding:6px;text-align:center;font-size:.88rem;font-weight:700;vertical-align:middle;border-radius:10px}
+.ls-table td:first-child{text-align:right;color:#1e5a8e;font-weight:900}
+.ls-table td.ach-cell{padding:0;background:transparent;border-radius:0}
+.ls-table th:nth-child(1),.ls-table td:nth-child(1){width:17%}
+.ls-table th:nth-child(2),.ls-table td:nth-child(2){width:49%}
+.ls-table th:nth-child(3),.ls-table td:nth-child(3),
+.ls-table th:nth-child(4),.ls-table td:nth-child(4),
+.ls-table th:nth-child(5),.ls-table td:nth-child(5){width:11.33%}
+.ls-table .rate-chip{height:28px}
 @media print{#app>*:not(.report-view){display:none!important}body{background:#fff}@page{margin:0}}
 </style>
 </head>
@@ -467,7 +498,7 @@ function renderNewReport(){
     </div>
     <div class="row">
       <div class="row-item"><label>التاريخ</label><input id="rdate" type="date" required></div>
-      <div class="row-item"><label>الهجري</label><input id="rdate-hijri" type="text"></div>
+      <div class="row-item"><label>الهجري</label><input id="rdate-hijri" type="text" dir="ltr" style="text-align:right"></div>
     </div>
     <label>الفترة</label><input id="rperiod" placeholder="الأسبوع الأول">`;
   c.appendChild(top);
@@ -480,7 +511,7 @@ function renderNewReport(){
       document.getElementById('rtype').value=editRep.type;
       document.getElementById('rperiod').value=editRep.period;
       dateInput.value=editRep.date;
-      hijriInput.value=editRep.hijri;
+      hijriInput.value=fmtHijri(editRep.hijri,editRep.date);
     } else {
       dateInput.valueAsDate=new Date();
       updateHijri();
@@ -496,10 +527,9 @@ function renderNewReport(){
         if(!res.ok) throw new Error('offline');
         const data=await res.json();
         const h=data.data.hijri;
-        hijriInput.value=`${h.day} ${h.month.ar} ${h.year}`;
+        hijriInput.value=`${+h.day}/${+h.month.number}/${toLatinDigits(h.year)}`;
       }catch(err){
-        const h=toHijri(val);
-        hijriInput.value=`${h.day} ${h.monthName} ${h.year} (تقريبي - بدون إنترنت)`;
+        hijriInput.value=hijriFromIntl(val);
       }
     }
   },0);
@@ -508,7 +538,7 @@ function renderNewReport(){
   s.subjects.forEach(sub=>{
     const safe=sub.replace(/\s+/g,'_');
     const b=el('div',{class:'subject-block'});
-    b.innerHTML=`<h3>${sub}</h3><label>الإنجاز</label><textarea data-subj="${sub}" placeholder="..."></textarea><label>التقييم</label><div class="rate-opts" data-subj="${sub}">${RATINGS.map(r=>`<label data-r="${r}"><input type="radio" name="rate_${safe}" value="${r}">${r}</label>`).join('')}</div>`;
+    b.innerHTML=`<h3>${subjHtml(sub)}</h3><label>الإنجاز</label><textarea data-subj="${sub}" placeholder="..."></textarea><label>التقييم</label><div class="rate-opts" data-subj="${sub}">${RATINGS.map(r=>`<label data-r="${r}"><input type="radio" name="rate_${safe}" value="${r}">${r}</label>`).join('')}</div>`;
     subWrap.appendChild(b);
   });
   c.appendChild(subWrap);
@@ -563,11 +593,12 @@ function renderArchive(){
   if(!s.reports||!s.reports.length){c.appendChild(el('div',{class:'empty'},'لا توجد تقارير'));return c;}
   const grouped={};
   s.reports.forEach(r=>{
-    const d=new Date(r.date).toLocaleDateString('ar-SA');
+    const d=r.date||'';
     if(!grouped[d]) grouped[d]=[];
     grouped[d].push(r);
   });
-  Object.entries(grouped).sort((a,b)=>new Date(b[0])-new Date(a[0])).forEach(([date,reps])=>{
+  Object.entries(grouped).sort((a,b)=>String(b[0]).localeCompare(String(a[0]))).forEach(([date0,reps])=>{
+    const date=dtHtml(fmtGreg(date0));
     const section=el('div',{style:'margin-bottom:14px'});
     section.innerHTML=`<h3 style="color:var(--primary);margin-bottom:10px">${date}</h3>`;
     reps.forEach(r=>{
@@ -599,6 +630,70 @@ function renderArchive(){
   return c;
 }
 
+
+// ===== أدوات التواريخ (أرقام لاتينية 123 بنفس التنسيق: يوم/شهر/سنة) =====
+function toLatinDigits(t){
+  return String(t==null?'':t).replace(/[\u0660-\u0669]/g,d=>d.charCodeAt(0)-0x0660).replace(/[\u06F0-\u06F9]/g,d=>d.charCodeAt(0)-0x06F0);
+}
+function fmtGreg(dateStr){
+  const m=toLatinDigits(dateStr).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(!m) return toLatinDigits(dateStr||'');
+  return `${+m[3]}/${+m[2]}/${m[1]}`;
+}
+function hijriFromIntl(dateStr){
+  try{
+    const m=toLatinDigits(dateStr).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(!m) return '';
+    const d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3],12));
+    const parts=new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn',{day:'numeric',month:'numeric',year:'numeric',timeZone:'UTC'}).formatToParts(d);
+    const g=t=>(parts.find(x=>x.type===t)||{}).value;
+    return `${g('day')}/${g('month')}/${String(g('year')).replace(/\D/g,'')}`;
+  }catch(e){
+    const h=toHijri(dateStr);
+    return `${h.day}/${h.month}/${h.year}`;
+  }
+}
+function hijriMonthNumber(name){
+  const n=String(name).replace(/[\u064B-\u065F\u0670\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/\s+/g,' ').trim();
+  if(n.includes('محرم')) return 1;
+  if(n.includes('صفر')) return 2;
+  if(n.includes('ربيع')) return (/(الثاني|الاخر|الآخر|الثانى)/.test(n))?4:3;
+  if(n.includes('جمادي')) return (/(الاولي|الاولى)/.test(n))?5:6;
+  if(n.includes('رجب')) return 7;
+  if(n.includes('شعبان')) return 8;
+  if(n.includes('رمضان')) return 9;
+  if(n.includes('شوال')) return 10;
+  if(/ذو ?القعدة/.test(n)) return 11;
+  if(/ذو ?الحجة/.test(n)) return 12;
+  return 0;
+}
+// يحوّل أي صيغة هجرية محفوظة إلى د/ش/سنة بأرقام لاتينية
+function fmtHijri(h,dateStr){
+  const t=toLatinDigits(h||'').replace(/\(.*?\)/g,'').trim();
+  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(t)) return t;
+  const m=t.match(/^(\d{1,2})\s+(\D+?)\s+(\d{4})/);
+  if(m){const mn=hijriMonthNumber(m[2]);if(mn) return `${+m[1]}/${mn}/${m[3]}`;}
+  const m2=t.match(/^(\d{1,2})[-\/\s](\d{1,2})[-\/\s](\d{4})$/);
+  if(m2) return `${+m2[1]}/${+m2[2]}/${m2[3]}`;
+  return dateStr?hijriFromIntl(dateStr):t;
+}
+const dtHtml=t=>`<span class="dt" dir="ltr">${t}</span>`;
+
+// ===== نصوص ثنائية الاتجاه (إنجليزي + أقواس) =====
+function escHtml(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function hasArabic(t){return /[\u0600-\u06FF]/.test(t);}
+function hasLatin(t){return /[A-Za-z]/.test(t);}
+function subjHtml(t){
+  const e=escHtml(t);
+  if(hasLatin(t)&&!hasArabic(t)) return `<span class="subj-ltr" dir="ltr">${e}</span>`;
+  return `<bdi dir="auto">${e}</bdi>`;
+}
+function achHtml(t){
+  const e=escHtml(t).replace(/\r?\n/g,'<br>');
+  if(hasLatin(t)&&!hasArabic(t)) return `<span dir="ltr" style="unicode-bidi:isolate;display:block">${e}</span>`;
+  return `<bdi dir="auto">${e}</bdi>`;
+}
+
 function wrapTextLines(text,maxLen){
   const words=(text||'').split(/\s+/).filter(Boolean);
   const lines=[];
@@ -623,6 +718,45 @@ function ratingPill(r){
   if(r==='جيد') return `<span class="pill pill-warning">○ جيد</span>`;
   if(r==='يحتاج عناية') return `<span class="pill pill-danger">! يحتاج عناية</span>`;
   return '-';
+}
+
+function buildLandscapeSheet(r,s,stu){
+  const sheet=el('div',{class:'ls-sheet'});
+  const logo=el('div',{class:'report-logo'});
+  logo.appendChild(el('img',{src:getLogoBase64()}));
+  const titles=el('div',{class:'ls-titles'});
+  const t1=el('div',{class:'report-title'});t1.textContent=`التقرير ${reportTypeLabel(r.type)}`;
+  const t2=el('div',{class:'report-org'});t2.textContent='- المدرسة القرآنية الوقفية بولاية العامرات';
+  const t3=el('div',{class:'report-school'});t3.textContent=s.teacher.school;
+  titles.append(t1,t2,t3);
+  const head=el('div',{class:'ls-head'});
+  head.append(logo,titles);
+  sheet.appendChild(head);
+
+  const meta=el('div',{class:'ls-meta'});
+  const nw=t=>`<span style="white-space:nowrap">${escHtml(t)}</span>`;
+  [['العبقري/ة',nw(stu?stu.name:'-')],['المعلم/ة',nw(s.teacher.name)],['الحلقة',nw(s.teacher.halaqa)],['الفترة',nw(r.period)],
+   ['التاريخ',dtHtml(fmtGreg(r.date))],['الهجري',dtHtml(fmtHijri(r.hijri,r.date))]].forEach(([k,v])=>{
+    meta.appendChild(el('div',{class:'report-meta-item',html:`<b>${k}</b>${v}`}));
+  });
+  sheet.appendChild(meta);
+
+  const table=el('table',{class:'ls-table'});
+  table.appendChild(el('tr',{html:'<th>المادة</th><th>ما أنجزه العبقري</th><th>ممتاز</th><th>جيد</th><th>يحتاج عناية</th>'}));
+  r.entries.forEach(e=>{
+    const tr=el('tr',{});
+    const chip=(name,cls)=>`<div class="rate-chip ${cls}${e.rating===name?' selected':''}">${e.rating===name?'✔':''}</div>`;
+    tr.append(
+      el('td',{html:`<b>${subjHtml(e.subject)}</b>`}),
+      el('td',{class:'ach-cell',html:`<span class="pill-achieve">${e.text?achHtml(e.text):'—'}</span>`}),
+      el('td',{html:chip('ممتاز','green')}),
+      el('td',{html:chip('جيد','blue')}),
+      el('td',{html:chip('يحتاج عناية','red')})
+    );
+    table.appendChild(tr);
+  });
+  sheet.appendChild(table);
+  return sheet;
 }
 
 function renderReportView(){
@@ -655,8 +789,8 @@ function renderReportView(){
   const item1b=el('div',{class:'report-meta-item',html:`<b>المعلم/ة</b>${nw(s.teacher.name)}`});
   const item2=el('div',{class:'report-meta-item',html:`<b>الحلقة</b>${nw(s.teacher.halaqa)}`});
   const item5=el('div',{class:'report-meta-item',html:`<b>الفترة</b>${nw(r.period)}`});
-  const item3=el('div',{class:'report-meta-item',html:`<b>التاريخ</b>${nw(new Date(r.date).toLocaleDateString('ar-SA'))}`});
-  const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b>${nw(r.hijri)}`});
+  const item3=el('div',{class:'report-meta-item',html:`<b>التاريخ</b>${dtHtml(fmtGreg(r.date))}`});
+  const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b>${dtHtml(fmtHijri(r.hijri,r.date))}`});
   meta.append(item1,item1b,item2,item5,item3,item4);
   c.appendChild(meta);
   
@@ -665,8 +799,8 @@ function renderReportView(){
   table.appendChild(thead);
   r.entries.forEach(e=>{
     const tr=el('tr',{});
-    const td1=el('td',{html:`<b>${e.subject}</b>`});
-    const td2=el('td',{html:`<span class="pill-achieve">${e.text?wrapTextLines(e.text,22):'—'}</span>`});
+    const td1=el('td',{html:`<b>${subjHtml(e.subject)}</b>`});
+    const td2=el('td',{class:'ach-cell',html:`<span class="pill-achieve">${e.text?achHtml(e.text):'—'}</span>`});
     const chip=(name,cls)=>`<div class="rate-chip ${cls}${e.rating===name?' selected':''}">${e.rating===name?'✔':''}</div>`;
     const td3=el('td',{html:chip('ممتاز','green')});
     const td4=el('td',{html:chip('جيد','blue')});
@@ -683,24 +817,25 @@ function renderReportView(){
   back.textContent='⬅️ رجوع للأرشيف';
   back.addEventListener('click',()=>{route='archive';window._viewRep=null;render();});
   
-  const pdfBtn=el('button',{class:'btn-outline'});
-  pdfBtn.textContent='📄 تحويل PDF ومشاركة';
-  pdfBtn.addEventListener('click',async()=>{
-    pdfBtn.textContent='جارٍ التحويل...';
-    pdfBtn.disabled=true;
+  const savePdf=async(btn,label,landscape)=>{
+    btn.textContent='جارٍ التحويل...';
+    btn.disabled=true;
     actions.style.display='none';
+    let sheet=null;
     try{
       if(document.fonts&&document.fonts.ready) await document.fonts.ready;
-      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
+      let target=c;
+      if(landscape){sheet=buildLandscapeSheet(r,s,stu);document.body.appendChild(sheet);target=sheet;}
+      const canvas=await html2canvas(target,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
       const imgData=canvas.toDataURL('image/png');
       const {jsPDF}=window.jspdf;
-      const pdf=new jsPDF('p','mm','a4');
+      const pdf=new jsPDF(landscape?'l':'p','mm','a4');
       const pageW=pdf.internal.pageSize.getWidth(),pageH=pdf.internal.pageSize.getHeight();
       const ratio=Math.min(pageW/canvas.width,pageH/canvas.height);
       const imgW=canvas.width*ratio,imgH=canvas.height*ratio;
       const x=(pageW-imgW)/2,y=(pageH-imgH)/2;
       pdf.addImage(imgData,'PNG',x,y,imgW,imgH);
-      const fname=`تقرير_${stu?stu.name:'الطالب'}.pdf`;
+      const fname=`تقرير_${stu?stu.name:'الطالب'}${landscape?'_بالعرض':''}.pdf`;
       const blob=pdf.output('blob');
       const file=new File([blob],fname,{type:'application/pdf'});
       if(navigator.canShare&&navigator.canShare({files:[file]})){
@@ -710,10 +845,19 @@ function renderReportView(){
         alert('تم تنزيل ملف PDF، افتح واتساب وأرفقه من الملفات لمشاركته');
       }
     }catch(err){alert('تعذر إنشاء PDF');}
+    if(sheet&&sheet.parentNode) sheet.parentNode.removeChild(sheet);
     actions.style.display='';
-    pdfBtn.textContent='📄 تحويل PDF ومشاركة';
-    pdfBtn.disabled=false;
-  });
+    btn.textContent=label;
+    btn.disabled=false;
+  };
+
+  const pdfBtn=el('button',{class:'btn-outline'});
+  pdfBtn.textContent='📄 تحويل PDF ومشاركة';
+  pdfBtn.addEventListener('click',()=>savePdf(pdfBtn,'📄 تحويل PDF ومشاركة',false));
+
+  const pdfLandBtn=el('button',{class:'btn-outline'});
+  pdfLandBtn.textContent='📄 تحويل PDF بالعرض';
+  pdfLandBtn.addEventListener('click',()=>savePdf(pdfLandBtn,'📄 تحويل PDF بالعرض',true));
   
   const imgBtn=el('button',{class:'btn-outline'});
   imgBtn.textContent='🖼️ صورة التقرير';
@@ -742,7 +886,7 @@ function renderReportView(){
   const waBtn=el('button',{class:'btn-outline'});
   waBtn.textContent='💬 واتساب';
   waBtn.addEventListener('click',()=>{
-    let txt=`التقرير ${reportTypeLabel(r.type)}\n- المدرسة القرآنية الوقفية بولاية العامرات\n${s.teacher.school}\nالعبقري/ة: ${stu?stu.name:'-'}\nالمعلم/ة: ${s.teacher.name}\nالحلقة: ${s.teacher.halaqa}\nالتاريخ: ${new Date(r.date).toLocaleDateString('ar-SA')}\nالهجري: ${r.hijri}\nالفترة: ${r.period}\n\n`;
+    let txt=`التقرير ${reportTypeLabel(r.type)}\n- المدرسة القرآنية الوقفية بولاية العامرات\n${s.teacher.school}\nالعبقري/ة: ${stu?stu.name:'-'}\nالمعلم/ة: ${s.teacher.name}\nالحلقة: ${s.teacher.halaqa}\nالتاريخ: ${fmtGreg(r.date)}\nالهجري: ${fmtHijri(r.hijri,r.date)}\nالفترة: ${r.period}\n\n`;
     r.entries.forEach(e=>{txt+=`${e.subject}: ${e.text||'-'} | ${e.rating||'-'}\n`;});
     window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
   });
@@ -755,7 +899,7 @@ function renderReportView(){
   backRow.appendChild(back);
   actions.appendChild(backRow);
   const midRow=el('div',{class:'footer-actions-row'});
-  midRow.append(pdfBtn,imgBtn,waBtn);
+  midRow.append(pdfBtn,pdfLandBtn,imgBtn,waBtn);
   actions.appendChild(midRow);
   const delWrap=el('div',{style:'margin-top:10px'});
   delWrap.appendChild(del);
