@@ -123,6 +123,15 @@ th{background:var(--primary);color:#fff}
 
 /* ===== تعديلات: التواريخ، نص المادة، نص الإنجاز، التقرير بالعرض ===== */
 .dt{direction:ltr;unicode-bidi:isolate;display:inline-block;white-space:nowrap;font-variant-numeric:lining-nums}
+.dt-ar{direction:rtl;unicode-bidi:isolate;display:inline-block;white-space:nowrap;font-variant-numeric:lining-nums}
+.report-view *,.ls-sheet *{letter-spacing:0!important}
+.report-meta-item{min-width:0;overflow-wrap:normal;word-break:normal}
+.report-meta-item span{white-space:normal!important}
+.report-meta-item span.dt,.report-meta-item span.dt-ar{white-space:nowrap!important}
+.report-meta{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.ls-meta{grid-template-columns:repeat(6,minmax(0,1fr))}
+.footer-actions-row.two{grid-template-columns:1fr 1fr}
+.pill-achieve,.report-table td:first-child,.ls-table td:first-child{overflow-wrap:normal!important;word-break:normal!important}
 .subj-ltr{direction:ltr;unicode-bidi:isolate;display:inline-block;text-align:left}
 .report-table{border-spacing:5px 6px}
 .report-table th:nth-child(1),.report-table td:nth-child(1){width:19%}
@@ -131,7 +140,7 @@ th{background:var(--primary);color:#fff}
 .report-table th:nth-child(4),.report-table td:nth-child(4),
 .report-table th:nth-child(5),.report-table td:nth-child(5){width:12.66%}
 .report-table td.ach-cell{padding:0;background:transparent;border-radius:0}
-.pill-achieve{display:block;width:100%;min-height:100%;box-sizing:border-box;padding:9px 10px;white-space:normal;overflow-wrap:break-word;word-break:normal;hyphens:none;text-align:center;line-height:1.7}
+.pill-achieve{display:block;width:100%;min-height:100%;box-sizing:border-box;padding:9px 10px;white-space:normal;overflow-wrap:normal;word-break:normal;hyphens:none;text-align:center;line-height:1.7}
 .pill-achieve bdi{unicode-bidi:isolate}
 /* التقرير بالعرض (للتصدير فقط) */
 .ls-sheet{position:fixed;left:-99999px;top:0;width:1123px;box-sizing:border-box;padding:22px 26px;border-radius:14px;color:#1a1a1a;font-family:'Almarai',sans-serif;direction:rtl;background:linear-gradient(135deg,#e3dcc0 0%,#a9b98a 45%,#5f7a5a 100%)}
@@ -498,7 +507,7 @@ function renderNewReport(){
     </div>
     <div class="row">
       <div class="row-item"><label>التاريخ</label><input id="rdate" type="date" required></div>
-      <div class="row-item"><label>الهجري</label><input id="rdate-hijri" type="text" dir="ltr" style="text-align:right"></div>
+      <div class="row-item"><label>الهجري</label><input id="rdate-hijri" type="text" dir="rtl"></div>
     </div>
     <label>الفترة</label><input id="rperiod" placeholder="الأسبوع الأول">`;
   c.appendChild(top);
@@ -527,7 +536,7 @@ function renderNewReport(){
         if(!res.ok) throw new Error('offline');
         const data=await res.json();
         const h=data.data.hijri;
-        hijriInput.value=`${+h.day}/${+h.month.number}/${toLatinDigits(h.year)}`;
+        hijriInput.value=`${+h.day} ${HIJRI_MONTHS[+h.month.number-1]} ${toLatinDigits(h.year)}`;
       }catch(err){
         hijriInput.value=hijriFromIntl(val);
       }
@@ -647,17 +656,17 @@ function hijriFromIntl(dateStr){
     const d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3],12));
     const parts=new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn',{day:'numeric',month:'numeric',year:'numeric',timeZone:'UTC'}).formatToParts(d);
     const g=t=>(parts.find(x=>x.type===t)||{}).value;
-    return `${g('day')}/${g('month')}/${String(g('year')).replace(/\D/g,'')}`;
+    return `${+g('day')} ${HIJRI_MONTHS[+g('month')-1]} ${String(g('year')).replace(/\D/g,'')}`;
   }catch(e){
     const h=toHijri(dateStr);
-    return `${h.day}/${h.month}/${h.year}`;
+    return `${h.day} ${h.monthName} ${h.year}`;
   }
 }
 function hijriMonthNumber(name){
   const n=String(name).replace(/[\u064B-\u065F\u0670\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/\s+/g,' ').trim();
   if(n.includes('محرم')) return 1;
   if(n.includes('صفر')) return 2;
-  if(n.includes('ربيع')) return (/(الثاني|الاخر|الآخر|الثانى)/.test(n))?4:3;
+  if(n.includes('ربيع')) return (/(الثاني|الاخر|الثانى)/.test(n))?4:3;
   if(n.includes('جمادي')) return (/(الاولي|الاولى)/.test(n))?5:6;
   if(n.includes('رجب')) return 7;
   if(n.includes('شعبان')) return 8;
@@ -667,17 +676,30 @@ function hijriMonthNumber(name){
   if(/ذو ?الحجة/.test(n)) return 12;
   return 0;
 }
-// يحوّل أي صيغة هجرية محفوظة إلى د/ش/سنة بأرقام لاتينية
+// أي صيغة هجرية محفوظة -> «يوم اسم_الشهر سنة» بأرقام لاتينية
 function fmtHijri(h,dateStr){
   const t=toLatinDigits(h||'').replace(/\(.*?\)/g,'').trim();
-  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(t)) return t;
-  const m=t.match(/^(\d{1,2})\s+(\D+?)\s+(\d{4})/);
-  if(m){const mn=hijriMonthNumber(m[2]);if(mn) return `${+m[1]}/${mn}/${m[3]}`;}
-  const m2=t.match(/^(\d{1,2})[-\/\s](\d{1,2})[-\/\s](\d{4})$/);
-  if(m2) return `${+m2[1]}/${+m2[2]}/${m2[3]}`;
+  const mk=(d,mn,y)=>`${+d} ${HIJRI_MONTHS[mn-1]} ${y}`;
+  let m=t.match(/^(\d{1,2})\s+(\D+?)\s+(\d{4})/);
+  if(m){const mn=hijriMonthNumber(m[2]);if(mn) return mk(m[1],mn,m[3]);}
+  m=t.match(/^(\d{1,2})[-\/\s](\d{1,2})[-\/\s](\d{4})$/);
+  if(m&&+m[2]>=1&&+m[2]<=12) return mk(m[1],+m[2],m[3]);
   return dateStr?hijriFromIntl(dateStr):t;
 }
 const dtHtml=t=>`<span class="dt" dir="ltr">${t}</span>`;
+const hjHtml=t=>`<span class="dt-ar" dir="rtl">${escHtml(t)}</span>`;
+
+// تصغير الخط تلقائيًا حتى يتسع النص بالكامل دون تقطيع أي كلمة أو حرف
+function fitNoBreak(root){
+  if(!root) return;
+  root.querySelectorAll('.pill-achieve,.report-meta-item,.report-table td:first-child,.ls-table td:first-child').forEach(n=>{
+    n.style.overflowWrap='normal';n.style.wordBreak='normal';
+    n.style.fontSize='';
+    let size=parseFloat(getComputedStyle(n).fontSize)||12;
+    let guard=0;
+    while(n.scrollWidth>n.clientWidth+1&&size>7&&guard<60){size-=0.5;n.style.fontSize=size+'px';guard++;}
+  });
+}
 
 // ===== نصوص ثنائية الاتجاه (إنجليزي + أقواس) =====
 function escHtml(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -734,9 +756,9 @@ function buildLandscapeSheet(r,s,stu){
   sheet.appendChild(head);
 
   const meta=el('div',{class:'ls-meta'});
-  const nw=t=>`<span style="white-space:nowrap">${escHtml(t)}</span>`;
+  const nw=t=>`<span>${escHtml(t)}</span>`;
   [['العبقري/ة',nw(stu?stu.name:'-')],['المعلم/ة',nw(s.teacher.name)],['الحلقة',nw(s.teacher.halaqa)],['الفترة',nw(r.period)],
-   ['التاريخ',dtHtml(fmtGreg(r.date))],['الهجري',dtHtml(fmtHijri(r.hijri,r.date))]].forEach(([k,v])=>{
+   ['التاريخ',dtHtml(fmtGreg(r.date))],['الهجري',hjHtml(fmtHijri(r.hijri,r.date))]].forEach(([k,v])=>{
     meta.appendChild(el('div',{class:'report-meta-item',html:`<b>${k}</b>${v}`}));
   });
   sheet.appendChild(meta);
@@ -784,13 +806,13 @@ function renderReportView(){
   c.appendChild(header);
   
   const meta=el('div',{class:'report-meta'});
-  const nw=t=>`<span style="white-space:nowrap">${t}</span>`;
+  const nw=t=>`<span>${escHtml(t)}</span>`;
   const item1=el('div',{class:'report-meta-item',html:`<b>العبقري/ة</b>${nw(stu?stu.name:'-')}`});
   const item1b=el('div',{class:'report-meta-item',html:`<b>المعلم/ة</b>${nw(s.teacher.name)}`});
   const item2=el('div',{class:'report-meta-item',html:`<b>الحلقة</b>${nw(s.teacher.halaqa)}`});
   const item5=el('div',{class:'report-meta-item',html:`<b>الفترة</b>${nw(r.period)}`});
   const item3=el('div',{class:'report-meta-item',html:`<b>التاريخ</b>${dtHtml(fmtGreg(r.date))}`});
-  const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b>${dtHtml(fmtHijri(r.hijri,r.date))}`});
+  const item4=el('div',{class:'report-meta-item',html:`<b>الهجري</b>${hjHtml(fmtHijri(r.hijri,r.date))}`});
   meta.append(item1,item1b,item2,item5,item3,item4);
   c.appendChild(meta);
   
@@ -826,6 +848,7 @@ function renderReportView(){
       if(document.fonts&&document.fonts.ready) await document.fonts.ready;
       let target=c;
       if(landscape){sheet=buildLandscapeSheet(r,s,stu);document.body.appendChild(sheet);target=sheet;}
+      fitNoBreak(target);
       const canvas=await html2canvas(target,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
       const imgData=canvas.toDataURL('image/png');
       const {jsPDF}=window.jspdf;
@@ -859,29 +882,46 @@ function renderReportView(){
   pdfLandBtn.textContent='📄 تحويل PDF بالعرض';
   pdfLandBtn.addEventListener('click',()=>savePdf(pdfLandBtn,'📄 تحويل PDF بالعرض',true));
   
-  const imgBtn=el('button',{class:'btn-outline'});
-  imgBtn.textContent='🖼️ صورة التقرير';
-  imgBtn.addEventListener('click',async()=>{
-    imgBtn.disabled=true;
+  const saveImg=async(btn,label,landscape)=>{
+    btn.textContent='جارٍ التحويل...';
+    btn.disabled=true;
     actions.style.display='none';
+    let sheet=null;
+    const done=()=>{
+      if(sheet&&sheet.parentNode) sheet.parentNode.removeChild(sheet);
+      actions.style.display='';
+      btn.textContent=label;
+      btn.disabled=false;
+    };
     try{
       if(document.fonts&&document.fonts.ready) await document.fonts.ready;
-      const canvas=await html2canvas(c,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
+      let target=c;
+      if(landscape){sheet=buildLandscapeSheet(r,s,stu);document.body.appendChild(sheet);target=sheet;}
+      fitNoBreak(target);
+      const canvas=await html2canvas(target,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
       canvas.toBlob(async(blob)=>{
-        const fname=`تقرير_${stu?stu.name:'الطالب'}.png`;
-        const file=new File([blob],fname,{type:'image/png'});
-        if(navigator.canShare&&navigator.canShare({files:[file]})){
-          try{await navigator.share({files:[file],title:fname,text:'تقرير عبقري القرآن'});}catch(e){}
-        } else {
-          const url=URL.createObjectURL(blob);
-          const a=document.createElement('a');a.href=url;a.download=fname;a.click();
-          alert('تم تنزيل صورة التقرير، يمكنك مشاركتها من معرض الصور');
-        }
-        actions.style.display='';
-        imgBtn.disabled=false;
+        try{
+          const fname=`تقرير_${stu?stu.name:'الطالب'}${landscape?'_بالعرض':''}.png`;
+          const file=new File([blob],fname,{type:'image/png'});
+          if(navigator.canShare&&navigator.canShare({files:[file]})){
+            try{await navigator.share({files:[file],title:fname,text:'تقرير عبقري القرآن'});}catch(e){}
+          } else {
+            const url=URL.createObjectURL(blob);
+            const a=document.createElement('a');a.href=url;a.download=fname;a.click();
+            alert('تم تنزيل صورة التقرير، يمكنك مشاركتها من معرض الصور');
+          }
+        }finally{done();}
       },'image/png');
-    }catch(err){alert('تعذر إنشاء الصورة');actions.style.display='';imgBtn.disabled=false;}
-  });
+    }catch(err){alert('تعذر إنشاء الصورة');done();}
+  };
+
+  const imgBtn=el('button',{class:'btn-outline'});
+  imgBtn.textContent='🖼️ صورة التقرير';
+  imgBtn.addEventListener('click',()=>saveImg(imgBtn,'🖼️ صورة التقرير',false));
+
+  const imgLandBtn=el('button',{class:'btn-outline'});
+  imgLandBtn.textContent='🖼️ صورة التقرير بالعرض';
+  imgLandBtn.addEventListener('click',()=>saveImg(imgLandBtn,'🖼️ صورة التقرير بالعرض',true));
   
   const waBtn=el('button',{class:'btn-outline'});
   waBtn.textContent='💬 واتساب';
@@ -895,16 +935,17 @@ function renderReportView(){
   del.textContent='🗑️ حذف';
   del.addEventListener('click',()=>{if(confirm('حذف؟')){s.reports=s.reports.filter(x=>x.id!==r.id);save();route='archive';window._viewRep=null;render();}});
   
-  const backRow=el('div',{style:'margin-bottom:8px'});
+  const mkRow=(...btns)=>{const r2=el('div',{class:'footer-actions-row two',style:'margin-top:8px'});r2.append(...btns);return r2;};
+  const backRow=el('div',{});
   backRow.appendChild(back);
   actions.appendChild(backRow);
-  const midRow=el('div',{class:'footer-actions-row'});
-  midRow.append(pdfBtn,pdfLandBtn,imgBtn,waBtn);
-  actions.appendChild(midRow);
-  const delWrap=el('div',{style:'margin-top:10px'});
-  delWrap.appendChild(del);
-  actions.appendChild(delWrap);
+  actions.appendChild(mkRow(pdfBtn,pdfLandBtn));
+  actions.appendChild(mkRow(imgBtn,imgLandBtn));
+  actions.appendChild(mkRow(waBtn,del));
   c.appendChild(actions);
+  const refit=()=>fitNoBreak(c);
+  setTimeout(refit,0);setTimeout(refit,300);
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(refit);
   return c;
 }
 
